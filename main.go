@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -74,7 +75,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Has("marvel") {
+		if _, err := os.Stat("results.json"); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				log.Fatalln("stat", err)
+			}
+
 			first, last := weekRange(time.Now().AddDate(0, -3, 0))
 			layout := "2006-01-02"
 			resp, err := client.Get(fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout)))
