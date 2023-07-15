@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -21,39 +20,6 @@ var index string
 //go:embed static
 var static embed.FS
 
-//go:embed pub.txt
-var pub string
-
-//go:embed priv.txt
-var priv string
-
-type apiKeyMiddleWare struct {
-	next http.RoundTripper
-}
-
-func (a *apiKeyMiddleWare) RoundTrip(req *http.Request) (*http.Response, error) {
-	ts := fmt.Sprintf("%d", time.Now().UTC().Unix())
-	hash := md5.Sum([]byte(ts + priv + pub))
-	query := req.URL.Query()
-	query.Add("ts", ts)
-	query.Add("hash", fmt.Sprintf("%x", hash))
-	query.Add("apikey", pub)
-	req.URL.RawQuery = query.Encode()
-	return a.next.RoundTrip(req)
-}
-
-type addBase struct {
-	next http.RoundTripper
-}
-
-func (a *addBase) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Host = "gateway.marvel.com"
-	req.URL.Host = req.Host
-	req.URL.Scheme = "https"
-	req.URL.Path = fmt.Sprintf("/v1/public%s", req.URL.Path)
-	return a.next.RoundTrip(req)
-}
-
 func weekRange(t time.Time) (time.Time, time.Time) {
 	for t.Weekday() != time.Sunday {
 		t = t.AddDate(0, 0, -1)
@@ -66,8 +32,14 @@ func weekRange(t time.Time) (time.Time, time.Time) {
 
 func main() {
 	client := &http.Client{
-		Timeout:   20 * time.Second,
-		Transport: &addBase{next: &apiKeyMiddleWare{next: http.DefaultTransport}},
+		Timeout: 20 * time.Second,
+		Transport: &addBase{
+			next: &apiKeyMiddleWare{
+				next: http.DefaultTransport,
+				pub:  &pubReader{},
+				priv: &privReader{},
+			},
+		},
 	}
 
 	tmpl := template.New("tmpl")
