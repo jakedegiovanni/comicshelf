@@ -56,11 +56,17 @@ body {
 }
 
 .container > .info > .title {
-    padding: 4px 4px 0 4px;
+    padding: 4px 8px 0 4px;
     display: flex;
     justify-content: flex-end;
     border-bottom: 1px solid black;
     text-align: end;
+}
+
+.container > .info > span {
+    text-align: end;
+    margin: 8px 8px 0 0;
+    font-size: 32px;
 }
 
 .container > .info > .marvel-links {
@@ -69,6 +75,6 @@ body {
     text-align: end;
 }
 
-.grower {
+.pusher {
     flex: 1;
 }

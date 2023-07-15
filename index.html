@@ -2,19 +2,24 @@
     <head>
         <title>Comicshelf</title>
 
-        <link rel="stylesheet" href="/static/index.css" />
+        <link href="/static/index.css" rel="stylesheet"  />
+
         <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     </head>
     <body>
         {{if gt (len .data.results) 0}}
             <div class="main">
                 {{range .data.results}}
                     {{if and (ne .format "Hardcover") (ne .format "Trade Paperback")}}
+                        {{ $resourceUri := .series.resourceURI }}
                         <div class="container">
                             <img src="{{.thumbnail.path}}/portrait_uncanny.{{.thumbnail.extension}}" alt="img"/></td>
                             <div class="info">
                                 <div class="title"><h3>{{.title}}</h3></div>
-                                <div class="grower"></div>
+                                <span class="material-icons">bookmark_border</span>
+                                <!-- <span class="material-icons">bookmark</span> -->
+                                <div class="pusher"></div>
                                 <div class="marvel-links">{{.series.name}}</div>
                                 <div class="marvel-links"><a href="{{(index .urls 0).url}}">Details</a></div>
                                 <div class="marvel-links"><a href="{{(index .urls 2).url}}">Reader</a></div>
