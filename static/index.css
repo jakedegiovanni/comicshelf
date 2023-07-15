@@ -1,3 +1,11 @@
+html {
+    background: #F2F3F4;
+}
+
+div {
+    background: #F2F3F4;
+}
+
 body {
     font: bold 16px 'Roboto Bold';
     margin: 0;
