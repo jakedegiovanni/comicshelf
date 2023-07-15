@@ -11,11 +11,14 @@
                 {{range .data.results}}
                     {{if and (ne .format "Hardcover") (ne .format "Trade Paperback")}}
                         <div class="container">
-                            <!-- <div class="overlay">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>archive</title><path d="M3,3H21V7H3V3M4,8H20V21H4V8M9.5,11A0.5,0.5 0 0,0 9,11.5V13H15V11.5A0.5,0.5 0 0,0 14.5,11H9.5Z" /></svg>
-                            </div> -->
                             <img src="{{.thumbnail.path}}/portrait_uncanny.{{.thumbnail.extension}}" alt="img"/></td>
-                            <div class="title">{{.title}}</div>
+                            <div class="info">
+                                <div class="title"><h3>{{.title}}</h3></div>
+                                <div class="sub-title">{{.series.name}}</div>
+                                <div class="grower"></div>
+                                <div class="marvel-links"><a href="{{(index .urls 0).url}}">Details</a></div>
+                                <div class="marvel-links"><a href="{{(index .urls 2).url}}">Reader</a></div>
+                            </div>
                         </div>
                     {{end}}
                 {{end}}
