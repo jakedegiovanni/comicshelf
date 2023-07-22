@@ -2,16 +2,11 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"io/fs"
 	"log"
 	"net/http"
-	"os"
-	"time"
 )
 
 //go:embed index.html
@@ -20,27 +15,8 @@ var index string
 //go:embed static
 var static embed.FS
 
-func weekRange(t time.Time) (time.Time, time.Time) {
-	for t.Weekday() != time.Sunday {
-		t = t.AddDate(0, 0, -1)
-	}
-
-	t = t.AddDate(0, 0, -7)
-
-	return t, t.AddDate(0, 0, 6)
-}
-
 func main() {
-	client := &http.Client{
-		Timeout: 20 * time.Second,
-		Transport: &addBase{
-			next: &apiKeyMiddleWare{
-				next: http.DefaultTransport,
-				pub:  &pubReader{},
-				priv: &privReader{},
-			},
-		},
-	}
+	client := NewMarvelClient()
 
 	tmpl := template.Must(
 		template.
@@ -59,40 +35,10 @@ func main() {
 			return
 		}
 
-		if _, err := os.Stat("results.json"); err != nil {
-			if !errors.Is(err, fs.ErrNotExist) {
-				log.Fatalln("stat", err)
-			}
-
-			first, last := weekRange(time.Now().AddDate(0, -3, 0))
-			layout := "2006-01-02"
-			resp, err := client.Get(fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout)))
-			if err != nil {
-				log.Fatalln(fmt.Errorf("getting series collection: %w", err))
-			}
-
-			log.Printf("%+v\n", resp.Header)
-
-			defer resp.Body.Close()
-
-			f, err := os.OpenFile("results.json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-			if err != nil {
-				log.Fatalln(fmt.Errorf("opening file: %w", err))
-			}
-			defer f.Close()
-
-			_, err = io.Copy(f, resp.Body)
-			if err != nil {
-				log.Fatalln(fmt.Errorf("writing: %w", err))
-			}
-
-			log.Println("ok")
-		}
-		f, err := os.OpenFile("results.json", os.O_CREATE|os.O_RDONLY|os.O_APPEND, 0666)
+		resp, err := client.GetWeeklyComics()
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalln(fmt.Errorf("getting series collection: %w", err))
 		}
-		defer f.Close()
 
 		if r.Method == http.MethodPost {
 			r.ParseForm()
@@ -103,12 +49,6 @@ func main() {
 			} else {
 				log.Println("unknown postform values")
 			}
-		}
-
-		var resp map[string]interface{}
-		err = json.NewDecoder(f).Decode(&resp)
-		if err != nil {
-			log.Fatalln("decode", err)
 		}
 
 		err = tmpl.Execute(w, resp)

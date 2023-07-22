@@ -8,7 +8,8 @@
 - follow certain series (complete)
 - view when issues in series will be released
 - be notified when issues in a series are released
-- ignore results.json, better caching of results
+- ignore results.json, better caching of results (complete)
+- cache limit and eviction
 - change weekly view
 - db persists beyond restarts
 - deploy to aws

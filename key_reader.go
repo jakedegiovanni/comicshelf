@@ -18,6 +18,7 @@ type pubReader struct {
 func (r *pubReader) Read(p []byte) (n int, err error) {
 	if r.readIndex >= int64(len(pub)) {
 		err = io.EOF
+		r.readIndex = 0
 		return
 	}
 
@@ -33,6 +34,7 @@ type privReader struct {
 func (r *privReader) Read(p []byte) (n int, err error) {
 	if r.readIndex >= int64(len(priv)) {
 		err = io.EOF
+		r.readIndex = 0
 		return
 	}
 

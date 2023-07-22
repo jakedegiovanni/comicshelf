@@ -7,9 +7,9 @@
         <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
     </head>
     <body>
-        {{if gt (len .data.results) 0}}
+        {{if gt (len .Data.Results) 0}}
             <div class="main">
-                {{range .data.results}}
+                {{range .Data.Results}}
                     {{if and (ne .format "Hardcover") (ne .format "Trade Paperback")}}
                         {{ $resourceUri := .series.resourceURI }}
                         <div id="{{.id}}" class="container">
@@ -30,7 +30,7 @@
                     {{end}}
                 {{end}}
             </div>
-            <div class="attribution-container">{{.attributionText}}</div>
+            <div class="attribution-container">{{.AttributionText}}</div>
         {{else}}
             <label for="week">Release Week</label>
             <input type="date" id="week" />
