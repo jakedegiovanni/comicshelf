@@ -61,12 +61,27 @@ body {
     justify-content: flex-end;
     border-bottom: 1px solid black;
     text-align: end;
+    min-height: 128px;
 }
 
-.container > .info > span {
-    text-align: end;
-    margin: 8px 8px 0 0;
-    font-size: 32px;
+.container > .info > form {
+    display: flex;
+    margin: 0;
+}
+
+.container > .info > form > button {
+    border: none;
+    margin: 8px 8px auto auto;
+    padding: 0;
+}
+
+.container > .info > form > button > svg {
+    width: 32px;
+    height: 32px
+}
+
+.container > .info > form > button > svg:hover {
+    cursor: pointer;
 }
 
 .container > .info > .marvel-links {

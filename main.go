@@ -42,11 +42,23 @@ func main() {
 		},
 	}
 
-	tmpl := template.New("tmpl")
+	tmpl := template.Must(
+		template.
+			New("tmpl").
+			Funcs(template.FuncMap{
+				"following": following,
+			}).
+			Parse(index),
+	)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+
 		if _, err := os.Stat("results.json"); err != nil {
 			if !errors.Is(err, fs.ErrNotExist) {
 				log.Fatalln("stat", err)
@@ -82,23 +94,18 @@ func main() {
 		}
 		defer f.Close()
 
+		if r.Method == http.MethodPost {
+			r.ParseForm()
+			action(r.PostFormValue("series"))
+		}
+
 		var resp map[string]interface{}
 		err = json.NewDecoder(f).Decode(&resp)
 		if err != nil {
 			log.Fatalln("decode", err)
 		}
 
-		t, err := tmpl.Clone()
-		if err != nil {
-			log.Fatalln("clone", err)
-		}
-
-		t, err = t.Parse(index)
-		if err != nil {
-			log.Fatalln("parse", err)
-		}
-
-		err = t.Execute(w, resp)
+		err = tmpl.Execute(w, resp)
 		if err != nil {
 			log.Fatalln("exec", err)
 		}
