@@ -49,13 +49,7 @@ body {
     border-right: 1px solid black;
 }
 
-.container > .info {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-}
-
-.container > .info > .title {
+.container > form > .title {
     padding: 4px 8px 0 4px;
     display: flex;
     justify-content: flex-end;
@@ -64,27 +58,30 @@ body {
     min-height: 128px;
 }
 
-.container > .info > form {
+.container > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     display: flex;
     margin: 0;
 }
 
-.container > .info > form > button {
+.container > form > button {
     border: none;
     margin: 8px 8px auto auto;
     padding: 0;
 }
 
-.container > .info > form > button > svg {
+.container > form > button > svg {
     width: 32px;
     height: 32px
 }
 
-.container > .info > form > button > svg:hover {
+.container > form > button > svg:hover {
     cursor: pointer;
 }
 
-.container > .info > .marvel-links {
+.container > form > .marvel-links {
     border-top: 1px solid black;
     padding: 4px;
     text-align: end;

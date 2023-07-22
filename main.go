@@ -96,7 +96,13 @@ func main() {
 
 		if r.Method == http.MethodPost {
 			r.ParseForm()
-			action(r.PostFormValue("series"))
+			if r.PostForm.Has("follow") {
+				follow(r.PostFormValue("follow"))
+			} else if r.PostForm.Has("unfollow") {
+				unfollow(r.PostFormValue("unfollow"))
+			} else {
+				log.Println("unknown postform values")
+			}
 		}
 
 		var resp map[string]interface{}

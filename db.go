@@ -4,12 +4,12 @@ var (
 	followed = make(map[string]struct{})
 )
 
-func action(series string) {
-	if following(series) {
-		delete(followed, series)
-		return
-	}
+func follow(series string) {
 	followed[series] = struct{}{}
+}
+
+func unfollow(series string) {
+	delete(followed, series)
 }
 
 func following(series string) bool {
