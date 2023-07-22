@@ -18,14 +18,24 @@ const (
 
 type apiKeyMiddleWare struct {
 	next http.RoundTripper
-	pub  io.Reader
-	priv io.Reader
+	pub  io.ReadSeeker
+	priv io.ReadSeeker
 }
 
 func (a *apiKeyMiddleWare) RoundTrip(req *http.Request) (*http.Response, error) {
+	_, err := a.pub.Seek(0, io.SeekStart)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	pub, err := io.ReadAll(a.pub)
 	if err != nil {
 		log.Fatalln("pub read", err)
+	}
+
+	_, err = a.priv.Seek(0, io.SeekStart)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	priv, err = io.ReadAll(a.priv)
@@ -74,8 +84,8 @@ func NewMarvelClient() *MarvelClient {
 			Transport: &addBase{
 				next: &apiKeyMiddleWare{
 					next: http.DefaultTransport,
-					pub:  &pubReader{},
-					priv: &privReader{},
+					pub:  Pub,
+					priv: Priv,
 				},
 			},
 		},
