@@ -8,10 +8,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 )
 
 //go:embed static
 var static embed.FS
+
+type Content struct {
+	Date         string
+	PageEndpoint string
+	Resp         interface{}
+}
 
 func main() {
 	db, err := NewDb("db.json")
@@ -19,6 +26,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	defer HandlePanic()
 	defer db.Shutdown()
 
 	client := NewMarvelClient()
@@ -27,7 +35,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.Handle(ComicsEndpoint, comics)
+	mux.HandleFunc(ComicsEndpoint, RecoverHandler(comics.ServeHTTP))
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {
@@ -52,4 +60,11 @@ func main() {
 	signal.Notify(c, os.Interrupt, os.Kill)
 
 	<-c
+}
+
+func HandlePanic() {
+	if r := recover(); r != nil {
+		log.Println("recovered", r)
+		debug.PrintStack()
+	}
 }

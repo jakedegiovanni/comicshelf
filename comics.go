@@ -69,11 +69,13 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(fmt.Errorf("getting series collection: %w", err))
 	}
 
-	input := make(map[string]interface{})
-	input["resp"] = resp
-	input["date"] = r.URL.Query().Get("date")
+	content := Content{
+		Date:         r.URL.Query().Get("date"),
+		PageEndpoint: ComicsEndpoint,
+		Resp:         resp,
+	}
 
-	err = c.tmpl.ExecuteTemplate(w, "index.html", input)
+	err = c.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
 		log.Fatalln("exec", err)
 	}

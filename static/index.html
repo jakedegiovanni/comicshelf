@@ -1,5 +1,7 @@
 <html>
     <head>
+        <meta charset="UTF-8">
+
         <title>Comicshelf</title>
 
         <link href="/static/index.css" rel="stylesheet"  />
@@ -8,14 +10,16 @@
     </head>
     <body>
         <div class="navbar">
-            <form method="get" action="/marvel-unlimited/comics">
+            <form method="get" action="{{.PageEndpoint}}">
                 <label for="date">Release Week</label>
-                <input type="date" id="date" name="date" value="{{.date}}" />
+                <input type="date" id="date" name="date" value="{{.Date}}" />
                 <button type="submit">Submit</button>
             </form>
-            <div>{{.resp.AttributionText}}</div>
+            <div>{{.Resp.AttributionText}}</div>
         </div>
 
-        {{template "content" .}}
+        <div class="main">
+            {{template "content" .}}
+        </div>
     </body>
 </html>
