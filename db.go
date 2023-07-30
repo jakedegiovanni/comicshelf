@@ -30,17 +30,23 @@ func NewDb(filename string) (*Db, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		followed = make(map[string]struct{})
 	} else {
 		b, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
 
-		err = json.Unmarshal(b, &followed)
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				return nil, err
+		if len(b) > 0 {
+			err = json.Unmarshal(b, &followed)
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return nil, err
+				}
+				followed = make(map[string]struct{})
 			}
+		} else {
 			followed = make(map[string]struct{})
 		}
 
@@ -78,7 +84,7 @@ func (d *Db) timedFlush() {
 func (d *Db) flush() {
 	_ = d.file.Truncate(0)
 	_, _ = d.file.Seek(0, io.SeekStart)
-	
+
 	err := json.NewEncoder(d.file).Encode(d.followed)
 	if err != nil {
 		log.Println("db save error", err)
@@ -88,6 +94,7 @@ func (d *Db) flush() {
 }
 
 func (d *Db) Shutdown() {
+	log.Println("shutting down db")
 	defer d.file.Close()
 	close(d.quit)
 	d.flush()

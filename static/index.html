@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <title>Comicshelf</title>
+
+        <link href="/static/index.css" rel="stylesheet"  />
+
+        <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    </head>
+    <body>
+        <div class="navbar">
+            <form method="get" action="/marvel-unlimited/comics">
+                <label for="date">Release Week</label>
+                <input type="date" id="date" name="date" value="{{.date}}" />
+                <button type="submit">Submit</button>
+            </form>
+            <div>{{.resp.AttributionText}}</div>
+        </div>
+
+        {{template "content" .}}
+    </body>
+</html>
