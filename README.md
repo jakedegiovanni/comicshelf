@@ -13,7 +13,7 @@
 - change weekly (complete)
 - better error handling
 - in-mem db persists beyond restarts (complete)
-- real db? object storage sufficient?
+- real db? object storage sufficient? something on filesystem enough?
 - makefile supports build for different platforms
 - deploy to aws
 - support more than just marvel unlimited
