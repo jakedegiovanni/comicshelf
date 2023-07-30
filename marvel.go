@@ -94,6 +94,7 @@ func NewMarvelClient() *MarvelClient {
 	}
 }
 
+func (m *MarvelClient) GetWeeklyComics(t time.Time) (*DataWrapper, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

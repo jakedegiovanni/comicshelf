@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"time"
 )
 
 //go:embed index.html
@@ -35,7 +36,17 @@ func main() {
 			return
 		}
 
-		resp, err := client.GetWeeklyComics()
+		if !r.URL.Query().Has("date") {
+			http.Redirect(w, r, fmt.Sprintf("/?date=%s", time.Now().Format("2006-01-02")), http.StatusFound)
+			return
+		}
+
+		t, err := time.Parse("2006-01-02", r.URL.Query().Get("date"))
+		if err != nil {
+			log.Fatalln("parse", err)
+		}
+
+		resp, err := client.GetWeeklyComics(t)
 		if err != nil {
 			log.Fatalln(fmt.Errorf("getting series collection: %w", err))
 		}
@@ -51,7 +62,11 @@ func main() {
 			}
 		}
 
-		err = tmpl.Execute(w, resp)
+		input := make(map[string]interface{})
+		input["resp"] = resp
+		input["week"] = r.URL.Query().Get("date")
+
+		err = tmpl.Execute(w, input)
 		if err != nil {
 			log.Fatalln("exec", err)
 		}
