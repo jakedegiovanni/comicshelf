@@ -10,7 +10,7 @@
 - be notified when issues in a series are released
 - ignore results.json, better caching of results (complete)
 - cache limit and eviction
-- change weekly 
+- change weekly (complete)
 - better error handling
 - db persists beyond restarts
 - deploy to aws

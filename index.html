@@ -8,10 +8,11 @@
     </head>
     <body>
         <div class="navbar">
-            <div>
+            <form method="get" action="/">
                 <label for="week">Release Week</label>
-                <input type="date" id="week" value="{{.week}}" />
-            </div>
+                <input type="date" id="date" name="date" value="{{.week}}" />
+                <button type="submit">Submit</button>
+            </form>
             <div>{{.resp.AttributionText}}</div>
         </div>
         <div class="main">
