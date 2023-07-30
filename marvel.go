@@ -94,11 +94,15 @@ func NewMarvelClient() *MarvelClient {
 	}
 }
 
-func (m *MarvelClient) GetWeeklyComics() (*DataWrapper, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	first, last := m.weekRange(time.Now().AddDate(0, monthOffset, 0))
+	if t.Weekday() == time.Sunday {
+		// sunday is when the cut off is however new comics show up on the monday, the offset set here makes expectations match reality
+		t = t.AddDate(0, 0, -1)
+	}
+
+	first, last := m.weekRange(t.AddDate(0, monthOffset, 0))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout))
 
 	if resp, ok := m.etagCache[endpoint]; ok {
