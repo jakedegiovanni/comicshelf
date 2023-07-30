@@ -17,9 +17,11 @@
                 <button type="submit">Submit</button>
             </form>
 
+            <div>Marvel Unlimited ComicShelf</div>
+
             <div class="navigation">
-                <a class="nav-item" id="/marvel-unlimited/comics" href="/marvel-unlimited/comics">Comics</a>
-                <a class="nav-item" id="/marvel-unlimited/series" href="/marvel-unlimited/series">Series</a>
+                <a class="nav-item" id="/marvel-unlimited/comics" href="/marvel-unlimited/comics?date={{.Date}}">Comics</a>
+                <a class="nav-item" id="/marvel-unlimited/series" href="/marvel-unlimited/series?date={{.Date}}">Series</a>
             </div>
         </div>
 
@@ -27,6 +29,10 @@
             {{template "content" .}}
         </div>
 
-        <div class="bar bottombar">{{.Resp.AttributionText}}</div>
+        <div class="pusher"></div>
+
+        {{ if .Resp}}
+            <div class="bar bottombar"><a href="https://marvel.com">{{.Resp.AttributionText}}</a></div>
+        {{end}}
     </body>
 </html>

@@ -12,14 +12,14 @@ import (
 
 type Db struct {
 	file     *os.File
-	followed map[string]struct{}
+	followed map[string]string
 	mu       *sync.Mutex
 	quit     chan bool
 }
 
 func NewDb(filename string) (*Db, error) {
 	var f *os.File
-	var followed map[string]struct{}
+	var followed map[string]string
 
 	if _, err := os.Stat(filename); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -31,7 +31,7 @@ func NewDb(filename string) (*Db, error) {
 			return nil, err
 		}
 
-		followed = make(map[string]struct{})
+		followed = make(map[string]string)
 	} else {
 		b, err := os.ReadFile(filename)
 		if err != nil {
@@ -44,10 +44,10 @@ func NewDb(filename string) (*Db, error) {
 				if !errors.Is(err, io.EOF) {
 					return nil, err
 				}
-				followed = make(map[string]struct{})
+				followed = make(map[string]string)
 			}
 		} else {
-			followed = make(map[string]struct{})
+			followed = make(map[string]string)
 		}
 
 		f, err = os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
@@ -100,11 +100,11 @@ func (d *Db) Shutdown() {
 	d.flush()
 }
 
-func (d *Db) Follow(series string) {
+func (d *Db) Follow(series, name string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.followed[series] = struct{}{}
+	d.followed[series] = name
 }
 
 func (d *Db) Unfollow(series string) {

@@ -2,13 +2,16 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 )
 
 //go:embed static
@@ -31,11 +34,44 @@ func main() {
 
 	client := NewMarvelClient()
 
-	comics := NewComics(static, client, db)
+	tmpl := template.Must(
+		template.
+			New("marvel-unlimited").
+			Funcs(template.FuncMap{
+				"contains": func(s1, s2 string) bool {
+					return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
+				},
+				"equals": func(s1, s2 string) bool {
+					return strings.ToLower(s1) == strings.ToLower(s2)
+				},
+				"following": db.Following,
+				"content": func(vals ...interface{}) (map[interface{}]interface{}, error) {
+					if len(vals)%2 != 0 {
+						return nil, errors.New("invalid dict call")
+					}
+
+					dict := make(map[interface{}]interface{})
+					for i := 0; i < len(vals); i += 2 {
+						dict[vals[i]] = vals[i+1]
+					}
+					return dict, nil
+				},
+			}).
+			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html"),
+	)
+
+	comics := NewComics(tmpl, client, db)
+	series := NewSeries(tmpl, client, db)
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(ComicsEndpoint, RecoverHandler(comics.ServeHTTP))
+	chain := MiddlewareChain(
+		RecoverHandler(),
+		AllowedMethods(http.MethodGet, http.MethodPost),
+	)
+
+	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
+	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {

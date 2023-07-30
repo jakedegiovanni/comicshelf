@@ -11,6 +11,8 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 100%;
 }
 
 .main {
@@ -62,4 +64,69 @@ body {
 
 .bottombar {
     text-align: center;
+    color: rgb(254, 254, 254);
+}
+
+.bottombar > a {
+    color: inherit;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 450px;
+    height: 450px;
+    margin: 8px;
+    padding: 0px;
+    box-shadow: 2px 2px 8px 0px #00000099;
+    outline: 1px solid black;
+    border-radius: 4px;
+    position: relative;
+}
+
+.container:hover {
+    box-shadow: 2px 2px 8px 4px #00000099;
+}
+
+.container > img {
+    width: 300px;
+    height: 450px;
+    border-right: 1px solid black;
+}
+
+.container > form > .title {
+    padding: 4px 8px 0 4px;
+    display: flex;
+    justify-content: flex-end;
+    border-bottom: 1px solid black;
+    text-align: end;
+    min-height: 128px;
+}
+
+.container > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin: 0;
+}
+
+.container > form > button {
+    border: none;
+    margin: 8px 8px auto auto;
+    padding: 0;
+}
+
+.container > form > button > svg {
+    width: 32px;
+    height: 32px
+}
+
+.container > form > button > svg:hover {
+    cursor: pointer;
+}
+
+.container > form > .marvel-links {
+    border-top: 1px solid black;
+    padding: 4px;
+    text-align: end;
 }

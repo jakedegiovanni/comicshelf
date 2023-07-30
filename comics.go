@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io/fs"
 	"log"
 	"net/http"
 	"time"
@@ -17,16 +16,7 @@ type Comics struct {
 	db     *Db
 }
 
-func NewComics(sys fs.FS, client *MarvelClient, db *Db) *Comics {
-	tmpl := template.Must(
-		template.
-			New("comics").
-			Funcs(template.FuncMap{
-				"following": db.Following,
-			}).
-			ParseFS(sys, "**/index.html", "**/comics/comics.html"),
-	)
-
+func NewComics(tmpl *template.Template, client *MarvelClient, db *Db) *Comics {
 	return &Comics{
 		tmpl:   tmpl,
 		client: client,
@@ -35,15 +25,10 @@ func NewComics(sys fs.FS, client *MarvelClient, db *Db) *Comics {
 }
 
 func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && r.Method != http.MethodPost {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
 		if r.PostForm.Has("follow") {
-			c.db.Follow(r.PostFormValue("follow"))
+			c.db.Follow(r.PostFormValue("follow"), r.PostFormValue("name"))
 		} else if r.PostForm.Has("unfollow") {
 			c.db.Unfollow(r.PostFormValue("unfollow"))
 		} else {
