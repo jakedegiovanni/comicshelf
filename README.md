@@ -14,6 +14,7 @@
 - better error handling
 - in-mem db persists beyond restarts (complete)
 - real db? object storage sufficient? something on filesystem enough?
+- efficient network usage, lots of network requests happening with html setup as it is
 - makefile supports build for different platforms
 - deploy to aws
 - support more than just marvel unlimited
