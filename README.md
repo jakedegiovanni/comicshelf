@@ -12,6 +12,8 @@
 - cache limit and eviction
 - change weekly (complete)
 - better error handling
-- db persists beyond restarts
+- in-mem db persists beyond restarts (complete)
+- real db? object storage sufficient?
+- makefile supports build for different platforms
 - deploy to aws
 - support more than just marvel unlimited
