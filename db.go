@@ -7,12 +7,14 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 )
 
 type Db struct {
 	file     *os.File
 	followed map[string]struct{}
 	mu       *sync.Mutex
+	quit     chan bool
 }
 
 func NewDb(filename string) (*Db, error) {
@@ -52,18 +54,43 @@ func NewDb(filename string) (*Db, error) {
 		file:     f,
 		followed: followed,
 		mu:       new(sync.Mutex),
+		quit:     make(chan bool),
 	}
 
+	db.timedFlush()
 	return db, nil
+}
+
+func (d *Db) timedFlush() {
+	go func() {
+		for {
+			timer := time.NewTimer(30 * time.Second)
+			select {
+			case <-d.quit:
+				return
+			case <-timer.C:
+				d.flush()
+			}
+		}
+	}()
+}
+
+func (d *Db) flush() {
+	_ = d.file.Truncate(0)
+	_, _ = d.file.Seek(0, io.SeekStart)
+	
+	err := json.NewEncoder(d.file).Encode(d.followed)
+	if err != nil {
+		log.Println("db save error", err)
+		return
+	}
+	log.Println("db saved")
 }
 
 func (d *Db) Shutdown() {
 	defer d.file.Close()
-
-	err := json.NewEncoder(d.file).Encode(d.followed)
-	if err != nil {
-		log.Println("db save error", err)
-	}
+	close(d.quit)
+	d.flush()
 }
 
 func (d *Db) Follow(series string) {

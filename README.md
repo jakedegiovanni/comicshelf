@@ -12,6 +12,7 @@
 - cache limit and eviction
 - change weekly (complete)
 - better error handling
+- better logging, slog?
 - in-mem db persists beyond restarts (complete)
 - real db? object storage sufficient? something on filesystem enough?
 - efficient network usage, lots of network requests happening with html setup as it is
