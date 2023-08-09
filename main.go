@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"strings"
+	"syscall"
 )
 
 //go:embed static
@@ -41,9 +42,7 @@ func main() {
 				"contains": func(s1, s2 string) bool {
 					return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
 				},
-				"equals": func(s1, s2 string) bool {
-					return strings.ToLower(s1) == strings.ToLower(s2)
-				},
+				"equals":    strings.EqualFold,
 				"following": db.Following,
 				"content": func(vals ...interface{}) (map[interface{}]interface{}, error) {
 					if len(vals)%2 != 0 {
@@ -92,8 +91,8 @@ func main() {
 	}()
 
 	fmt.Println("server ready to accept connections")
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	<-c
 }
