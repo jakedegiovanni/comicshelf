@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"runtime/debug"
 )
@@ -23,12 +23,12 @@ func MiddlewareChain(chain ...Middleware) Middleware {
 	}
 }
 
-func RecoverHandler() Middleware {
+func RecoverHandler(logger *slog.Logger) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func(uri string) {
 				if r := recover(); r != nil {
-					log.Println("recovered handler", uri, r)
+					logger.Error("recovered handler", slog.String("url", uri), slog.Any("r", r))
 					debug.PrintStack()
 				}
 			}(r.URL.String())

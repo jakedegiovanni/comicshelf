@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -14,13 +15,15 @@ type Comics struct {
 	tmpl   *template.Template
 	client *MarvelClient
 	db     *Db
+	logger *slog.Logger
 }
 
-func NewComics(tmpl *template.Template, client *MarvelClient, db *Db) *Comics {
+func NewComics(tmpl *template.Template, client *MarvelClient, db *Db, logger *slog.Logger) *Comics {
 	return &Comics{
 		tmpl:   tmpl,
 		client: client,
 		db:     db,
+		logger: logger,
 	}
 }
 
@@ -32,7 +35,7 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else if r.PostForm.Has("unfollow") {
 			c.db.Unfollow(r.PostFormValue("unfollow"))
 		} else {
-			log.Println("unknown postform values")
+			c.logger.Warn("unknown postform values")
 		}
 
 		http.Redirect(w, r, fmt.Sprintf("/marvel-unlimited/comics?date=%s", r.PostFormValue("date")), http.StatusFound)
@@ -46,12 +49,14 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	t, err := time.Parse("2006-01-02", r.URL.Query().Get("date"))
 	if err != nil {
-		log.Fatalln("parse", err)
+		c.logger.Error("parse", slog.String("err", err.Error()))
+		os.Exit(1) // todo - shouldn't be doing this
 	}
 
 	resp, err := c.client.GetWeeklyComics(t)
 	if err != nil {
-		log.Fatalln(fmt.Errorf("getting series collection: %w", err))
+		c.logger.Error("getting series collection", slog.String("err", err.Error()))
+		os.Exit(1) // todo shouldn't bee doing this
 	}
 
 	content := Content{
@@ -62,6 +67,7 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = c.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
-		log.Fatalln("exec", err)
+		c.logger.Error("exec", slog.String("err", err.Error()))
+		os.Exit(1) // todo - shouldn't be doing this
 	}
 }

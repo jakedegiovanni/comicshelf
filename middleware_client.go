@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 )
@@ -10,7 +10,8 @@ import (
 var pathRegex = regexp.MustCompile(`^/v1/public.*$`)
 
 type addBase struct {
-	next http.RoundTripper
+	next   http.RoundTripper
+	logger *slog.Logger
 }
 
 func (a *addBase) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -20,6 +21,6 @@ func (a *addBase) RoundTrip(req *http.Request) (*http.Response, error) {
 	if !pathRegex.MatchString(req.URL.Path) {
 		req.URL.Path = fmt.Sprintf("/v1/public%s", req.URL.Path)
 	}
-	log.Println("sending to", req.URL.String())
+	a.logger.Debug("sending to", slog.String("url", req.URL.String()))
 	return a.next.RoundTrip(req)
 }

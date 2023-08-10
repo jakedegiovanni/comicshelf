@@ -3,10 +3,9 @@ package main
 import (
 	"embed"
 	"errors"
-	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,15 +24,21 @@ type Content struct {
 }
 
 func main() {
-	db, err := NewDb("db.json")
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
+
+	db, err := NewDb("db.json", logger)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 
-	defer HandlePanic()
+	defer HandlePanic(logger)
 	defer db.Shutdown()
 
-	client := NewMarvelClient()
+	client := NewMarvelClient(logger)
 
 	tmpl := template.Must(
 		template.
@@ -59,13 +64,13 @@ func main() {
 			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html"),
 	)
 
-	comics := NewComics(tmpl, client, db)
-	series := NewSeries(tmpl, client, db)
+	comics := NewComics(tmpl, client, db, logger)
+	series := NewSeries(tmpl, client, db, logger)
 
 	mux := http.NewServeMux()
 
 	chain := MiddlewareChain(
-		RecoverHandler(),
+		RecoverHandler(logger),
 		AllowedMethods(http.MethodGet, http.MethodPost),
 	)
 
@@ -74,7 +79,8 @@ func main() {
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
 
@@ -86,20 +92,21 @@ func main() {
 	go func() {
 		err = srv.ListenAndServe()
 		if err != nil {
-			log.Fatalln(err)
+			logger.Error(err.Error())
+			os.Exit(1)
 		}
 	}()
 
-	fmt.Println("server ready to accept connections")
+	logger.Info("server ready to accept connections")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	<-c
 }
 
-func HandlePanic() {
+func HandlePanic(logger *slog.Logger) {
 	if r := recover(); r != nil {
-		log.Println("recovered", r)
+		logger.Error("recovered", slog.Any("r", r))
 		debug.PrintStack()
 	}
 }

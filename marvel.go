@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -17,30 +18,35 @@ const (
 )
 
 type apiKeyMiddleWare struct {
-	next http.RoundTripper
-	pub  io.ReadSeeker
-	priv io.ReadSeeker
+	next   http.RoundTripper
+	pub    io.ReadSeeker
+	priv   io.ReadSeeker
+	logger *slog.Logger
 }
 
 func (a *apiKeyMiddleWare) RoundTrip(req *http.Request) (*http.Response, error) {
 	_, err := a.pub.Seek(0, io.SeekStart)
 	if err != nil {
-		log.Fatalln(err)
+		a.logger.Error(err.Error())
+		os.Exit(1) // todo - we shouldn't be doing this
 	}
 
 	pub, err := io.ReadAll(a.pub)
 	if err != nil {
-		log.Fatalln("pub read", err)
+		a.logger.Error("pub read", slog.String("err", err.Error()))
+		os.Exit(1) // todo - we shouldn't be doing this
 	}
 
 	_, err = a.priv.Seek(0, io.SeekStart)
 	if err != nil {
-		log.Fatalln(err)
+		a.logger.Error(err.Error())
+		os.Exit(1) // todo - we shouldn't be doing this
 	}
 
 	priv, err = io.ReadAll(a.priv)
 	if err != nil {
-		log.Fatalln("priv read", err)
+		a.logger.Error("priv read", slog.String("err", err.Error()))
+		os.Exit(1) // todo - we shouldn't be doing this
 	}
 
 	ts := fmt.Sprintf("%d", time.Now().UTC().Unix())
@@ -115,22 +121,26 @@ type MarvelClient struct {
 	client    *http.Client
 	etagCache map[string]interface{}
 	mu        *sync.Mutex
+	logger    *slog.Logger
 }
 
-func NewMarvelClient() *MarvelClient {
+func NewMarvelClient(logger *slog.Logger) *MarvelClient {
 	return &MarvelClient{
 		client: &http.Client{
 			Timeout: 20 * time.Second,
 			Transport: &addBase{
 				next: &apiKeyMiddleWare{
-					next: http.DefaultTransport,
-					pub:  Pub,
-					priv: Priv,
+					next:   http.DefaultTransport,
+					pub:    Pub,
+					priv:   Priv,
+					logger: logger,
 				},
+				logger: logger,
 			},
 		},
 		etagCache: make(map[string]interface{}),
 		mu:        &sync.Mutex{},
+		logger:    logger,
 	}
 }
 
@@ -143,15 +153,15 @@ func (m *MarvelClient) GetWeeklyComics(t time.Time) (*DataWrapper[MarvelComic], 
 	first, last := m.weekRange(t.AddDate(0, monthOffset, 0))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout))
 
-	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client)
+	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
 }
 
 func (m *MarvelClient) GetComic(endpoint string) (*DataWrapper[MarvelComic], error) {
-	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client)
+	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
 }
 
 func (m *MarvelClient) GetSeries(endpoint string) (*DataWrapper[MarvelSeries], error) {
-	return request[MarvelSeries](endpoint, m.mu, m.etagCache, m.client)
+	return request[MarvelSeries](endpoint, m.mu, m.etagCache, m.client, m.logger)
 }
 
 func (m *MarvelClient) weekRange(t time.Time) (time.Time, time.Time) {
@@ -169,6 +179,7 @@ func request[T any](
 	mu *sync.Mutex,
 	etagCache map[string]interface{},
 	client *http.Client,
+	logger *slog.Logger,
 ) (*DataWrapper[T], error) {
 	if resp, ok := cacheRead(endpoint, etagCache, mu); ok {
 		resp, ok := resp.(*DataWrapper[T])
@@ -187,13 +198,13 @@ func request[T any](
 			defer r.Body.Close()
 
 			if r.StatusCode == http.StatusNotModified {
-				log.Println("not modified, using cached response")
+				logger.Debug("not modified, using cached response")
 				return resp, nil
 			}
 		}
 	}
 
-	log.Println("item modified or not present in cache")
+	logger.Debug("item modified or not present in cache")
 
 	resp, err := client.Get(endpoint)
 	if err != nil {

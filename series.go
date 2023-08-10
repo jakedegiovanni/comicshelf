@@ -2,8 +2,9 @@ package main
 
 import (
 	"html/template"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"sort"
 	"sync"
 )
@@ -14,23 +15,26 @@ type Series struct {
 	tmpl   *template.Template
 	client *MarvelClient
 	db     *Db
+	logger *slog.Logger
 }
 
-func NewSeries(tmpl *template.Template, client *MarvelClient, db *Db) *Series {
+func NewSeries(tmpl *template.Template, client *MarvelClient, db *Db, logger *slog.Logger) *Series {
 	return &Series{
 		tmpl:   tmpl,
 		client: client,
 		db:     db,
+		logger: logger,
 	}
 }
 
 func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.String())
-	log.Println(r.URL.Query().Get("series"))
+	s.logger.Debug(r.URL.String())
+	s.logger.Debug(r.URL.Query().Get("series"))
 
 	resp, err := s.client.GetSeries(r.URL.Query().Get("series"))
 	if err != nil {
-		log.Fatalln("series", err)
+		s.logger.Error("series", slog.String("err", err.Error()))
+		os.Exit(1) // todo - shouldn't be doing this
 	}
 
 	var c chan []MarvelComic
@@ -45,7 +49,7 @@ func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				w, err := s.client.GetComic(endpoint)
 				if err != nil {
-					log.Println("couldn't get comic", endpoint, err)
+					s.logger.Warn("couldn't get comic", slog.String("endpoint", endpoint), slog.String("err", err.Error()))
 				}
 
 				c <- w.Data.Results
@@ -82,6 +86,7 @@ func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = s.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
-		log.Fatalln("exec", err)
+		s.logger.Error("exec", slog.String("err", err.Error()))
+		os.Exit(1) // todo - shouldn't be doing this
 	}
 }
