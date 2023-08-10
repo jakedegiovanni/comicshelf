@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.3.1"
+axum = "0.6.20"
 tera = "1.19.0"
+tokio = { version = "1.30.0", features = ["macros", "rt-multi-thread"] }

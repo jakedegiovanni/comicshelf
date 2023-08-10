@@ -1,22 +1,25 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use std::sync::Arc;
 use tera::{Tera, Context};
+use axum::{Router, routing::get, extract::State, response::Html, http::StatusCode};
 
 struct ComicShelf {
     tera: Tera
 }
 
-#[get("/")]
-async fn index(data: web::Data<ComicShelf>) -> impl Responder {
+async fn index(state: State<Arc<ComicShelf>>) -> Result<Html<String>, StatusCode> {
     let mut ctx = Context::new();
     ctx.insert("name", "World");
 
-    let body = data.tera.render("index1.html", &ctx).unwrap();
+    let body = match state.tera.render("index1.html", &ctx) {
+        Ok(b) => b,
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR)
+    };
 
-    HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body)
+    Ok(Html(body))
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     let tera = match Tera::new("templates/**/*.html") {
         Ok(t) => t,
         Err(e) => {
@@ -25,14 +28,13 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let d = web::Data::new(ComicShelf{tera});
+    let state = Arc::new(ComicShelf{tera});
+    let app = Router::new()
+        .route("/", get(index))
+        .with_state(state);
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(d.clone())
-            .service(index)
-    })
-        .bind(("127.0.0.1", 8080))?
-        .run()
+    axum::Server::bind(&"127.0.0.1:8080".parse().unwrap())
+        .serve(app.into_make_service())
         .await
+        .unwrap();
 }
