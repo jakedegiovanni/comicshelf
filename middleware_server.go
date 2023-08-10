@@ -1,21 +1,21 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"runtime/debug"
 )
 
-type Middleware func(next http.HandlerFunc) http.HandlerFunc
+type ServerMiddleware func(next http.HandlerFunc) http.HandlerFunc
 
-func MiddlewareChain(chain ...Middleware) Middleware {
+func ServerMiddlewareChain(chain ...ServerMiddleware) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		if len(chain) == 0 {
 			return next
 		}
 
 		wrapped := next
-		for i := len(chain) - 1; i > 0; i-- {
+		for i := len(chain) - 1; i >= 0; i-- {
 			wrapped = chain[i](wrapped)
 		}
 
@@ -23,12 +23,12 @@ func MiddlewareChain(chain ...Middleware) Middleware {
 	}
 }
 
-func RecoverHandler() Middleware {
+func RecoverHandler(logger *slog.Logger) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func(uri string) {
 				if r := recover(); r != nil {
-					log.Println("recovered handler", uri, r)
+					logger.Error("recovered handler", slog.String("url", uri), slog.Any("r", r))
 					debug.PrintStack()
 				}
 			}(r.URL.String())
@@ -38,7 +38,7 @@ func RecoverHandler() Middleware {
 	}
 }
 
-func AllowedMethods(methods ...string) Middleware {
+func AllowedMethods(methods ...string) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			allowed := false

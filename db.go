@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
@@ -15,9 +15,10 @@ type Db struct {
 	followed map[string]string
 	mu       *sync.Mutex
 	quit     chan bool
+	logger   *slog.Logger
 }
 
-func NewDb(filename string) (*Db, error) {
+func NewDb(filename string, logger *slog.Logger) (*Db, error) {
 	var f *os.File
 	var followed map[string]string
 
@@ -61,6 +62,7 @@ func NewDb(filename string) (*Db, error) {
 		followed: followed,
 		mu:       new(sync.Mutex),
 		quit:     make(chan bool),
+		logger:   logger,
 	}
 
 	db.timedFlush()
@@ -87,14 +89,14 @@ func (d *Db) flush() {
 
 	err := json.NewEncoder(d.file).Encode(d.followed)
 	if err != nil {
-		log.Println("db save error", err)
+		d.logger.Error("db save error", slog.String("err", err.Error()))
 		return
 	}
-	log.Println("db saved")
+	d.logger.Debug("db saved")
 }
 
 func (d *Db) Shutdown() {
-	log.Println("shutting down db")
+	d.logger.Debug("shutting down db")
 	defer d.file.Close()
 	close(d.quit)
 	d.flush()
