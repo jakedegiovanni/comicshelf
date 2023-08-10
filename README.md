@@ -16,6 +16,7 @@
     - use slog everywhere (complete)
     - no more os.exit from non root paths
 - htmx to enable better html structure
+- middleware for enforcing date query parameter on marvel endpoints
 - in-mem db persists beyond restarts (complete)
 - real db? object storage sufficient? something on filesystem enough?
 - efficient network usage, lots of network requests happening with html setup as it is
