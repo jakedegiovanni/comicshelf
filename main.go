@@ -69,7 +69,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	chain := MiddlewareChain(
+	chain := ServerMiddlewareChain(
 		RecoverHandler(logger),
 		AllowedMethods(http.MethodGet, http.MethodPost),
 	)

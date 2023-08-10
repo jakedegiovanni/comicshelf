@@ -6,16 +6,16 @@ import (
 	"runtime/debug"
 )
 
-type Middleware func(next http.HandlerFunc) http.HandlerFunc
+type ServerMiddleware func(next http.HandlerFunc) http.HandlerFunc
 
-func MiddlewareChain(chain ...Middleware) Middleware {
+func ServerMiddlewareChain(chain ...ServerMiddleware) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		if len(chain) == 0 {
 			return next
 		}
 
 		wrapped := next
-		for i := len(chain) - 1; i > 0; i-- {
+		for i := len(chain) - 1; i >= 0; i-- {
 			wrapped = chain[i](wrapped)
 		}
 
@@ -23,7 +23,7 @@ func MiddlewareChain(chain ...Middleware) Middleware {
 	}
 }
 
-func RecoverHandler(logger *slog.Logger) Middleware {
+func RecoverHandler(logger *slog.Logger) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func(uri string) {
@@ -38,7 +38,7 @@ func RecoverHandler(logger *slog.Logger) Middleware {
 	}
 }
 
-func AllowedMethods(methods ...string) Middleware {
+func AllowedMethods(methods ...string) ServerMiddleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			allowed := false

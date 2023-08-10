@@ -9,9 +9,35 @@ import (
 
 var pathRegex = regexp.MustCompile(`^/v1/public.*$`)
 
+type ClientMiddleware func(next http.RoundTripper) http.RoundTripper
+
+func ClientMiddlewareChain(chain ...ClientMiddleware) ClientMiddleware {
+	return func(next http.RoundTripper) http.RoundTripper {
+		if len(chain) == 0 {
+			return next
+		}
+
+		wrapped := next
+		for i := len(chain) - 1; i >= 0; i-- {
+			wrapped = chain[i](wrapped)
+		}
+
+		return wrapped
+	}
+}
+
 type addBase struct {
 	next   http.RoundTripper
 	logger *slog.Logger
+}
+
+func AddBase(logger *slog.Logger) ClientMiddleware {
+	return func(next http.RoundTripper) http.RoundTripper {
+		return &addBase{
+			next:   next,
+			logger: logger,
+		}
+	}
 }
 
 func (a *addBase) RoundTrip(req *http.Request) (*http.Response, error) {

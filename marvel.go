@@ -24,6 +24,17 @@ type apiKeyMiddleWare struct {
 	logger *slog.Logger
 }
 
+func ApiKeyMiddleware(logger *slog.Logger, pub, priv io.ReadSeeker) ClientMiddleware {
+	return func(next http.RoundTripper) http.RoundTripper {
+		return &apiKeyMiddleWare{
+			next:   next,
+			logger: logger,
+			pub:    pub,
+			priv:   priv,
+		}
+	}
+}
+
 func (a *apiKeyMiddleWare) RoundTrip(req *http.Request) (*http.Response, error) {
 	_, err := a.pub.Seek(0, io.SeekStart)
 	if err != nil {
@@ -56,6 +67,7 @@ func (a *apiKeyMiddleWare) RoundTrip(req *http.Request) (*http.Response, error) 
 	query.Add("hash", fmt.Sprintf("%x", hash))
 	query.Add("apikey", string(pub))
 	req.URL.RawQuery = query.Encode()
+	a.logger.Debug("api key middleware")
 	return a.next.RoundTrip(req)
 }
 
@@ -125,18 +137,15 @@ type MarvelClient struct {
 }
 
 func NewMarvelClient(logger *slog.Logger) *MarvelClient {
+	chain := ClientMiddlewareChain(
+		AddBase(logger),
+		ApiKeyMiddleware(logger, Pub, Priv),
+	)
+
 	return &MarvelClient{
 		client: &http.Client{
-			Timeout: 20 * time.Second,
-			Transport: &addBase{
-				next: &apiKeyMiddleWare{
-					next:   http.DefaultTransport,
-					pub:    Pub,
-					priv:   Priv,
-					logger: logger,
-				},
-				logger: logger,
-			},
+			Timeout:   20 * time.Second,
+			Transport: chain(http.DefaultTransport),
 		},
 		etagCache: make(map[string]interface{}),
 		mu:        &sync.Mutex{},
