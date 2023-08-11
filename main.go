@@ -49,7 +49,7 @@ func main() {
 				"equals":    strings.EqualFold,
 				"following": db.Following,
 			}).
-			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html"),
+			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html", "**/follow.html", "**/unfollow.html"),
 	)
 
 	comics := NewComics(tmpl, client, db, logger)
@@ -62,7 +62,7 @@ func main() {
 		AllowedMethods(http.MethodGet, http.MethodPost),
 	)
 
-	mux.Handle(ComicsEndpoint, http.StripPrefix(ComicsEndpoint, chain(comics.ServeHTTP)))
+	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
 	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
 
 	f, err := fs.Sub(static, "static")

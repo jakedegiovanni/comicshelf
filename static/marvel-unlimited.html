@@ -1,5 +1,5 @@
 {{define "content"}}
-    {{ $date := .Date }}
+    <base href="/marvel-unlimited/" />
 
     {{range .Resp.Data.Results}}
         {{template "comic-card" .}}
