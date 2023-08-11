@@ -8,10 +8,12 @@
         <script src="/static/index.js"></script>
 
         <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+        
+        <script src="https://unpkg.com/htmx.org@1.9.4" integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV" crossorigin="anonymous"></script>
     </head>
     <body onload="activateNavItems('{{.PageEndpoint}}')">
         <div class="bar navbar">
-            <form method="get" action="{{.PageEndpoint}}">
+            <form method="get">
                 <label for="date">Release Week</label>
                 <input type="date" id="date" name="date" value="{{.Date}}" />
                 <button type="submit">Submit</button>

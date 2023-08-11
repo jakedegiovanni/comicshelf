@@ -1,8 +1,7 @@
 {{define "content"}}
     {{ $date := .Date }}
-    {{ $pageEndpoint := .PageEndpoint }}
 
     {{range .Resp.Data.Results}}
-        {{template "comic-card" content "Resp" . "Date" $date "PageEndpoint" $pageEndpoint}}
+        {{template "comic-card" .}}
     {{end}}
 {{end}}

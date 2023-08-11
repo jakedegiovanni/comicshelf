@@ -15,7 +15,11 @@
 - better logging
     - use slog everywhere (complete)
     - no more os.exit from non root paths
-- htmx to enable better html structure
+- htmx to enable better html structure (in progress)
+    - comic-card : follow / unfollow (in progress)
+    - navbar
+    - don't use cdn
+    - accessibility
 - middleware for enforcing date query parameter on marvel endpoints
 - in-mem db persists beyond restarts (complete)
 - real db? object storage sufficient? something on filesystem enough?

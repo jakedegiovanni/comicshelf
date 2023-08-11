@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"errors"
 	"html/template"
 	"io/fs"
 	"log/slog"
@@ -49,17 +48,6 @@ func main() {
 				},
 				"equals":    strings.EqualFold,
 				"following": db.Following,
-				"content": func(vals ...interface{}) (map[interface{}]interface{}, error) {
-					if len(vals)%2 != 0 {
-						return nil, errors.New("invalid dict call")
-					}
-
-					dict := make(map[interface{}]interface{})
-					for i := 0; i < len(vals); i += 2 {
-						dict[vals[i]] = vals[i+1]
-					}
-					return dict, nil
-				},
 			}).
 			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html"),
 	)
@@ -74,7 +62,7 @@ func main() {
 		AllowedMethods(http.MethodGet, http.MethodPost),
 	)
 
-	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
+	mux.Handle(ComicsEndpoint, http.StripPrefix(ComicsEndpoint, chain(comics.ServeHTTP)))
 	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
 
 	f, err := fs.Sub(static, "static")

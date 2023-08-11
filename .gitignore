@@ -5,4 +5,4 @@ db.json
 .idea/
 .vscode/
 
-.target
+target/
