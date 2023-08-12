@@ -1,9 +1,9 @@
+use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use std::sync::Arc;
-use tera::{Tera, Context};
-use axum::{Router, routing::get, extract::State, response::Html, http::StatusCode};
+use tera::{Context, Tera};
 
 struct ComicShelf {
-    tera: Tera
+    tera: Tera,
 }
 
 async fn index(state: State<Arc<ComicShelf>>) -> Result<Html<String>, StatusCode> {
@@ -12,7 +12,10 @@ async fn index(state: State<Arc<ComicShelf>>) -> Result<Html<String>, StatusCode
 
     let body = match state.tera.render("index1.html", &ctx) {
         Ok(b) => b,
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR)
+        Err(e) => {
+            println!("tera rendering error: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
 
     Ok(Html(body))
@@ -28,10 +31,8 @@ async fn main() {
         }
     };
 
-    let state = Arc::new(ComicShelf{tera});
-    let app = Router::new()
-        .route("/", get(index))
-        .with_state(state);
+    let state = Arc::new(ComicShelf { tera });
+    let app = axum::Router::new().route("/", get(index)).with_state(state);
 
     axum::Server::bind(&"127.0.0.1:8080".parse().unwrap())
         .serve(app.into_make_service())
