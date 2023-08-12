@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -29,27 +28,6 @@ func NewComics(tmpl *template.Template, client *MarvelClient, db *Db, logger *sl
 }
 
 func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.Contains(r.URL.Path, "/track") {
-		_ = r.ParseForm()
-		id := r.PostFormValue("id")
-		name := r.PostFormValue("name")
-		if c.db.Following(id) {
-			c.db.Unfollow(id)
-			err := c.tmpl.ExecuteTemplate(w, "follow", nil)
-			if err != nil {
-				c.logger.Warn("error writing unfollow", slog.String("err", err.Error()))
-			}
-			return
-		} else {
-			c.db.Follow(id, name)
-			err := c.tmpl.ExecuteTemplate(w, "unfollow", nil)
-			if err != nil {
-				c.logger.Warn("error writing follow", slog.String("err", err.Error()))
-			}
-			return
-		}
-	}
-
 	if !r.URL.Query().Has("date") {
 		http.Redirect(w, r, fmt.Sprintf("/marvel-unlimited/comics?date=%s", time.Now().Format("2006-01-02")), http.StatusFound)
 		return

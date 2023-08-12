@@ -3,15 +3,15 @@
     {{ $resourceUri := .Series.ResourceURI }}
     <div id="{{.Id}}" class="container">
         <img src="{{.Thumbnail.Path}}/portrait_uncanny.{{.Thumbnail.Extension}}" alt="img"/>
-        <form hx-post="comics/track" hx-target=".container > form > button > svg">
+        <form>
             <div class="title"><h3>{{.Title}}</h3></div>
             
             <input type="hidden" name="name" value="{{.Series.Name}}" />
-            <button type="submit" name="id" value="{{$resourceUri}}">
+            <button type="submit" name="key" value="{{$resourceUri}}" hx-post="/api/track">
             {{ if following $resourceUri }}
-                {{template "unfollow"}}
+                {{template "unfollow" .Id }}
             {{else}}
-                {{template "follow"}}
+                {{template "follow" .Id}}
             {{end}}
             </button>
             <div class="pusher"></div>

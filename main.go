@@ -54,6 +54,7 @@ func main() {
 
 	comics := NewComics(tmpl, client, db, logger)
 	series := NewSeries(tmpl, client, db, logger)
+	api := NewApi(logger, db, tmpl)
 
 	mux := http.NewServeMux()
 
@@ -64,6 +65,7 @@ func main() {
 
 	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
 	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
+	mux.HandleFunc(TrackEndpoint, chain(api.Track))
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {
