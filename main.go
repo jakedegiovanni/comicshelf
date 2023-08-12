@@ -11,6 +11,9 @@ import (
 	"runtime/debug"
 	"strings"
 	"syscall"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 //go:embed static
@@ -56,26 +59,24 @@ func main() {
 	series := NewSeries(tmpl, client, db, logger)
 	api := NewApi(logger, db, tmpl)
 
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	chain := ServerMiddlewareChain(
-		RecoverHandler(logger),
-		AllowedMethods(http.MethodGet, http.MethodPost),
-	)
+	router.Use(ServerLogger(logger))
+	router.Use(middleware.Recoverer)
 
-	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
-	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
-	mux.HandleFunc(TrackEndpoint, chain(api.Track))
+	router.Get(ComicsEndpoint, comics.ServeHTTP)
+	router.Get(SeriesEndpoint, series.ServeHTTP)
+	router.Post(TrackEndpoint, api.Track)
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
+	router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler: router,
 		Addr:    "127.0.0.1:8080",
 	}
 

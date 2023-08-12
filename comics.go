@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const ComicsEndpoint = "/marvel-unlimited/comics/"
+const ComicsEndpoint = "/marvel-unlimited/comics"
 
 type Comics struct {
 	tmpl   *template.Template

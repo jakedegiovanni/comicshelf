@@ -16,7 +16,7 @@
     - use slog everywhere (complete)
     - no more os.exit from non root paths
 - htmx to enable better html structure (in progress)
-    - comic-card : follow / unfollow (in progress)
+    - comic-card : follow / unfollow (complete)
     - navbar
     - don't use cdn
     - accessibility
