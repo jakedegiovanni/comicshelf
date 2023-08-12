@@ -2,16 +2,18 @@ package main
 
 import (
 	"embed"
-	"errors"
-	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"strings"
+	"syscall"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 //go:embed static
@@ -24,15 +26,21 @@ type Content struct {
 }
 
 func main() {
-	db, err := NewDb("db.json")
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}))
+
+	db, err := NewDb("db.json", logger)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 
-	defer HandlePanic()
+	defer HandlePanic(logger)
 	defer db.Shutdown()
 
-	client := NewMarvelClient()
+	client := NewMarvelClient(logger)
 
 	tmpl := template.Must(
 		template.
@@ -41,66 +49,55 @@ func main() {
 				"contains": func(s1, s2 string) bool {
 					return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
 				},
-				"equals": func(s1, s2 string) bool {
-					return strings.ToLower(s1) == strings.ToLower(s2)
-				},
+				"equals":    strings.EqualFold,
 				"following": db.Following,
-				"content": func(vals ...interface{}) (map[interface{}]interface{}, error) {
-					if len(vals)%2 != 0 {
-						return nil, errors.New("invalid dict call")
-					}
-
-					dict := make(map[interface{}]interface{})
-					for i := 0; i < len(vals); i += 2 {
-						dict[vals[i]] = vals[i+1]
-					}
-					return dict, nil
-				},
 			}).
-			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html"),
+			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html", "**/follow.html", "**/unfollow.html"),
 	)
 
-	comics := NewComics(tmpl, client, db)
-	series := NewSeries(tmpl, client, db)
+	comics := NewComics(tmpl, client, db, logger)
+	series := NewSeries(tmpl, client, db, logger)
+	api := NewApi(logger, db, tmpl)
 
-	mux := http.NewServeMux()
+	router := chi.NewRouter()
 
-	chain := MiddlewareChain(
-		RecoverHandler(),
-		AllowedMethods(http.MethodGet, http.MethodPost),
-	)
+	router.Use(ServerLogger(logger))
+	router.Use(middleware.Recoverer)
 
-	mux.HandleFunc(ComicsEndpoint, chain(comics.ServeHTTP))
-	mux.HandleFunc(SeriesEndpoint, chain(series.ServeHTTP))
+	router.Get(ComicsEndpoint, comics.ServeHTTP)
+	router.Get(SeriesEndpoint, series.ServeHTTP)
+	router.Post(TrackEndpoint, api.Track)
 
 	f, err := fs.Sub(static, "static")
 	if err != nil {
-		log.Fatalln(err)
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
+	router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler: router,
 		Addr:    "127.0.0.1:8080",
 	}
 
 	go func() {
 		err = srv.ListenAndServe()
 		if err != nil {
-			log.Fatalln(err)
+			logger.Error(err.Error())
+			os.Exit(1)
 		}
 	}()
 
-	fmt.Println("server ready to accept connections")
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	logger.Info("server ready to accept connections")
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	<-c
 }
 
-func HandlePanic() {
+func HandlePanic(logger *slog.Logger) {
 	if r := recover(); r != nil {
-		log.Println("recovered", r)
+		logger.Error("recovered", slog.Any("r", r))
 		debug.PrintStack()
 	}
 }

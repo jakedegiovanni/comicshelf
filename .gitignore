@@ -4,3 +4,5 @@ db.json
 *.txt
 .idea/
 .vscode/
+
+target/
