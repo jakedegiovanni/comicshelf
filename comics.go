@@ -28,20 +28,6 @@ func NewComics(tmpl *template.Template, client *MarvelClient, db *Db, logger *sl
 }
 
 func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		_ = r.ParseForm()
-		if r.PostForm.Has("follow") {
-			c.db.Follow(r.PostFormValue("follow"), r.PostFormValue("name"))
-		} else if r.PostForm.Has("unfollow") {
-			c.db.Unfollow(r.PostFormValue("unfollow"))
-		} else {
-			c.logger.Warn("unknown postform values")
-		}
-
-		http.Redirect(w, r, fmt.Sprintf("/marvel-unlimited/comics?date=%s", r.PostFormValue("date")), http.StatusFound)
-		return
-	}
-
 	if !r.URL.Query().Has("date") {
 		http.Redirect(w, r, fmt.Sprintf("/marvel-unlimited/comics?date=%s", time.Now().Format("2006-01-02")), http.StatusFound)
 		return
