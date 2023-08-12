@@ -85,6 +85,11 @@ type Url struct {
 	Url  string `json:"url"`
 }
 
+type Date struct {
+	Type string `json:"type"`
+	Date string `json:"date"`
+}
+
 type Thumbnail struct {
 	Path      string `json:"path"`
 	Extension string `json:"extension"`
@@ -109,6 +114,7 @@ type MarvelComic struct {
 	Format      string `json:"format"`
 	IssueNumber int    `json:"issueNumber"`
 	Series      Item   `json:"series"`
+	Dates       []Date `json:"dates"`
 }
 
 type MarvelClient struct {
