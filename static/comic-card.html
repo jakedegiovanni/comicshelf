@@ -9,9 +9,9 @@
             <input type="hidden" name="name" value="{{.Series.Name}}" />
             <button type="submit" name="key" value="{{$resourceUri}}" hx-post="/api/track">
             {{ if following $resourceUri }}
-                {{template "unfollow" .Id }}
+                {{template "unfollow"}}
             {{else}}
-                {{template "follow" .Id}}
+                {{template "follow"}}
             {{end}}
             </button>
             <div class="pusher"></div>
