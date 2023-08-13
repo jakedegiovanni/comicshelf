@@ -58,19 +58,48 @@ async fn marvel_unlimited_comics(
             p.uri = hyper::Uri::from_parts(up).unwrap();
             Request::from_parts(p, b)
         })
+        .map_request(|req: Request<hyper::Body>| {
+            let (mut p, b) = req.into_parts();
+
+            let mut up = p.uri.into_parts();
+            let pq = up.path_and_query.unwrap();
+            let path = pq.path();
+            let q = pq.query().unwrap_or("");
+
+            let path = {
+                if !path.contains("/v1/public") {
+                    format!("/v1/public{}", path)
+                } else {
+                    path.to_string()
+                }
+            };
+
+            let ts = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            let hash = format!("{:x}", md5::compute(format!("{}privkeypubkey", ts)));
+            let query = format!("apikey=pubkey&ts={}&hash={}", ts, hash);
+            let query = {
+                if q.is_empty() {
+                    format!("?{}", query)
+                } else {
+                    format!("{}&{}", q, query)
+                }
+            };
+            let query = format!("{}?{}", path, query);
+            up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query).unwrap());
+
+            p.uri = hyper::Uri::from_parts(up).unwrap();
+            Request::from_parts(p, b)
+        })
         .service(c);
 
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
     ctx.insert("Date", "2023-08-12");
 
-    let ts = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    let hash = format!("{:x}", md5::compute(format!("{}privKeypubKey", ts)));
-
-    let req = Request::get(format!("/v1/public/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100&apikey=pubKey&ts={}&hash={}", ts, hash)).body(hyper::Body::empty()).unwrap();
+    let req = Request::get(format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100")).body(hyper::Body::empty()).unwrap();
     let result = svc.call(req).await.unwrap();
     let result: DataWrapper = serde_json::from_slice(
         hyper::body::to_bytes(result.into_body())
