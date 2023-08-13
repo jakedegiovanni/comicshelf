@@ -1,11 +1,31 @@
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tera::{Context, Tera};
 use tower_http::services::ServeDir;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct DataContainer {
+    offset: i32,
+    limit: i32,
+    total: i32,
+    count: i32,
+    results: Value,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct DataWrapper {
+    code: Value,
+    status: String,
+    copyright: String,
+    attributionText: String,
+    attributionHTML: String,
+    etag: String,
+    data: DataContainer,
+}
 
 struct ComicShelf {
     tera: Tera,
@@ -23,20 +43,20 @@ async fn marvel_unlimited_comics(
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_millis();
-    let hash = "";
+    let hash = format!("{:x}", md5::compute(format!("{}privKeypubKey", ts)));
 
-    let result = match state.client.get(format!("https://gateway.marvel.com/v1/public/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100&apikey=...&ts={}&hash={}", ts, hash)).send().await {
+    let result = match state.client.get(format!("https://gateway.marvel.com/v1/public/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100&apikey=pubKey&ts={}&hash={}", ts, hash)).send().await {
         Ok(r) => r,
         Err(e) => {
             println!("http client error: {}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     }
-    .text()
+    .json::<DataWrapper>()
     .await;
 
-    let result: HashMap<String, Value> = match result {
-        Ok(r) => serde_json::from_str(&r).unwrap(),
+    let result: DataWrapper = match result {
+        Ok(r) => r,
         Err(e) => {
             println!("text errors: {}", e);
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
