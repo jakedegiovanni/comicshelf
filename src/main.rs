@@ -1,10 +1,12 @@
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
-use reqwest::Client;
+use hyper::Request;
+use hyper_tls::HttpsConnector;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tera::{Context, Tera};
+use tower::{Service, ServiceBuilder};
 use tower_http::services::ServeDir;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,6 +18,7 @@ struct DataContainer {
     results: Value,
 }
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 struct DataWrapper {
     code: Value,
@@ -29,12 +32,34 @@ struct DataWrapper {
 
 struct ComicShelf {
     tera: Tera,
-    client: Client,
+}
+
+impl ComicShelf {
+    fn new(tera: Tera) -> Self {
+        ComicShelf { tera }
+    }
 }
 
 async fn marvel_unlimited_comics(
     State(state): State<Arc<ComicShelf>>,
 ) -> Result<Html<String>, StatusCode> {
+    let https = HttpsConnector::new();
+    let c = hyper::Client::builder().build::<_, hyper::Body>(https);
+    let mut svc = ServiceBuilder::new()
+        .map_request(|req: Request<hyper::Body>| {
+            let (mut p, b) = req.into_parts();
+
+            let mut up = p.uri.into_parts();
+            up.authority = Some(hyper::http::uri::Authority::from_static(
+                "gateway.marvel.com",
+            ));
+            up.scheme = Some(hyper::http::uri::Scheme::HTTPS);
+
+            p.uri = hyper::Uri::from_parts(up).unwrap();
+            Request::from_parts(p, b)
+        })
+        .service(c);
+
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
     ctx.insert("Date", "2023-08-12");
@@ -45,34 +70,20 @@ async fn marvel_unlimited_comics(
         .as_millis();
     let hash = format!("{:x}", md5::compute(format!("{}privKeypubKey", ts)));
 
-    let result = match state.client.get(format!("https://gateway.marvel.com/v1/public/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100&apikey=pubKey&ts={}&hash={}", ts, hash)).send().await {
-        Ok(r) => r,
-        Err(e) => {
-            println!("http client error: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-    .json::<DataWrapper>()
-    .await;
-
-    let result: DataWrapper = match result {
-        Ok(r) => r,
-        Err(e) => {
-            println!("text errors: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+    let req = Request::get(format!("/v1/public/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100&apikey=pubKey&ts={}&hash={}", ts, hash)).body(hyper::Body::empty()).unwrap();
+    let result = svc.call(req).await.unwrap();
+    let result: DataWrapper = serde_json::from_slice(
+        hyper::body::to_bytes(result.into_body())
+            .await
+            .unwrap()
+            .iter()
+            .as_slice(),
+    )
+    .unwrap();
 
     ctx.insert("results", &result);
 
-    let body = match state.tera.render("marvel-unlimited.html", &ctx) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("tera rendering error: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
+    let body = state.tera.render("marvel-unlimited.html", &ctx).unwrap();
     Ok(Html(body))
 }
 
@@ -86,8 +97,7 @@ async fn main() {
         }
     };
 
-    let client = Client::new();
-    let state = Arc::new(ComicShelf { tera, client });
+    let state = Arc::new(ComicShelf::new(tera));
 
     let app = axum::Router::new()
         .route("/marvel-unlimited/comics", get(marvel_unlimited_comics))
