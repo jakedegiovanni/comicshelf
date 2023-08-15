@@ -1,4 +1,5 @@
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
+use hyper::client::HttpConnector;
 use hyper::Request;
 use hyper_tls::HttpsConnector;
 use serde::{Deserialize, Serialize};
@@ -30,79 +31,98 @@ struct DataWrapper {
     data: DataContainer,
 }
 
+type HyperService = dyn Service<
+        Request<hyper::Body>,
+        Error = hyper::Error,
+        Future = hyper::client::ResponseFuture,
+        Response = hyper::Response<hyper::Body>,
+    > + Send
+    + Sync;
+
 struct ComicShelf {
     tera: Tera,
+    client: hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
 }
 
 impl ComicShelf {
-    fn new(tera: Tera) -> Self {
-        ComicShelf { tera }
+    fn new(tera: Tera, client: hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
+        ComicShelf { tera, client }
+    }
+
+    fn marvel_client(&self) -> Box<HyperService> {
+        let svc = ServiceBuilder::new()
+            .map_request(|req: Request<hyper::Body>| {
+                let (mut p, b) = req.into_parts();
+
+                let mut up = p.uri.into_parts();
+                up.authority = Some(hyper::http::uri::Authority::from_static(
+                    "gateway.marvel.com",
+                ));
+                up.scheme = Some(hyper::http::uri::Scheme::HTTPS);
+
+                p.uri = hyper::Uri::from_parts(up).unwrap();
+                Request::from_parts(p, b)
+            })
+            .map_request(|req: Request<hyper::Body>| {
+                let (mut p, b) = req.into_parts();
+
+                let mut up = p.uri.into_parts();
+                let pq = up.path_and_query.unwrap();
+                let path = pq.path();
+                let q = pq.query().unwrap_or("");
+
+                let path = {
+                    if !path.contains("/v1/public") {
+                        format!("/v1/public{}", path)
+                    } else {
+                        path.to_string()
+                    }
+                };
+
+                let pub_key = include_str!("../pub.txt"); // todo: formalize, this is janky
+                let priv_key = include_str!("../priv.txt");
+
+                let ts = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis();
+                let hash = format!(
+                    "{:x}",
+                    md5::compute(format!("{}{}{}", ts, priv_key, pub_key))
+                );
+                let query = format!("apikey={}&ts={}&hash={}", pub_key, ts, hash);
+                let query = {
+                    if q.is_empty() {
+                        format!("?{}", query)
+                    } else {
+                        format!("{}&{}", q, query)
+                    }
+                };
+                let query = format!("{}?{}", path, query);
+                up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query).unwrap());
+
+                p.uri = hyper::Uri::from_parts(up).unwrap();
+                Request::from_parts(p, b)
+            })
+            .service(self.client.clone());
+
+        Box::new(svc)
     }
 }
 
 async fn marvel_unlimited_comics(
     State(state): State<Arc<ComicShelf>>,
 ) -> Result<Html<String>, StatusCode> {
-    let https = HttpsConnector::new();
-    let c = hyper::Client::builder().build::<_, hyper::Body>(https);
-    let mut svc = ServiceBuilder::new()
-        .map_request(|req: Request<hyper::Body>| {
-            let (mut p, b) = req.into_parts();
-
-            let mut up = p.uri.into_parts();
-            up.authority = Some(hyper::http::uri::Authority::from_static(
-                "gateway.marvel.com",
-            ));
-            up.scheme = Some(hyper::http::uri::Scheme::HTTPS);
-
-            p.uri = hyper::Uri::from_parts(up).unwrap();
-            Request::from_parts(p, b)
-        })
-        .map_request(|req: Request<hyper::Body>| {
-            let (mut p, b) = req.into_parts();
-
-            let mut up = p.uri.into_parts();
-            let pq = up.path_and_query.unwrap();
-            let path = pq.path();
-            let q = pq.query().unwrap_or("");
-
-            let path = {
-                if !path.contains("/v1/public") {
-                    format!("/v1/public{}", path)
-                } else {
-                    path.to_string()
-                }
-            };
-
-            let ts = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_millis();
-            let hash = format!("{:x}", md5::compute(format!("{}privkeypubkey", ts)));
-            let query = format!("apikey=pubkey&ts={}&hash={}", ts, hash);
-            let query = {
-                if q.is_empty() {
-                    format!("?{}", query)
-                } else {
-                    format!("{}&{}", q, query)
-                }
-            };
-            let query = format!("{}?{}", path, query);
-            up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query).unwrap());
-
-            p.uri = hyper::Uri::from_parts(up).unwrap();
-            Request::from_parts(p, b)
-        })
-        .service(c);
-
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
     ctx.insert("Date", "2023-08-12");
 
+    let mut svc = state.marvel_client();
+
     let req = Request::get(format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange=2023-01-01,2023-01-07&hasDigitalIssue=true&orderBy=issueNumber&limit=100")).body(hyper::Body::empty()).unwrap();
-    let result = svc.call(req).await.unwrap();
+    let result = svc.call(req).await.unwrap().into_body();
     let result: DataWrapper = serde_json::from_slice(
-        hyper::body::to_bytes(result.into_body())
+        hyper::body::to_bytes(result)
             .await
             .unwrap()
             .iter()
@@ -126,7 +146,10 @@ async fn main() {
         }
     };
 
-    let state = Arc::new(ComicShelf::new(tera));
+    let https = HttpsConnector::new();
+    let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+
+    let state = Arc::new(ComicShelf::new(tera, client));
 
     let app = axum::Router::new()
         .route("/marvel-unlimited/comics", get(marvel_unlimited_comics))
