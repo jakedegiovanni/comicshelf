@@ -4,6 +4,7 @@ use hyper::Request;
 use hyper_tls::HttpsConnector;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tera::{Context, Tera};
@@ -136,15 +137,21 @@ async fn marvel_unlimited_comics(
     Ok(Html(body))
 }
 
+fn following(args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let _ = args.get("index").unwrap(); // todo use for db check
+    Ok(tera::to_value(false).unwrap())
+}
+
 #[tokio::main]
 async fn main() {
-    let tera = match Tera::new("templates/**/*.html") {
+    let mut tera = match Tera::new("templates/**/*.html") {
         Ok(t) => t,
         Err(e) => {
             println!("Parsing error(s): {}", e);
             std::process::exit(1);
         }
     };
+    tera.register_function("following", following);
 
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
