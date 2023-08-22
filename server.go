@@ -49,8 +49,9 @@ func Server(cfg *AppConfig, v *viper.Viper) *cobra.Command {
 						"contains": func(s1, s2 string) bool {
 							return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
 						},
-						"equals":    strings.EqualFold,
-						"following": db.Following,
+						"equals":              strings.EqualFold,
+						"following":           db.Following,
+						"marvelUnlimitedDate": DateResponseToMarvelUnlimitedDate,
 					}).
 					ParseFS(static.Files, "index.html", "marvel-unlimited.html", "comic-card.html", "follow.html", "unfollow.html"),
 			)

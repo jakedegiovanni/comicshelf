@@ -16,6 +16,11 @@
             </button>
             <div class="pusher"></div>
             <div class="marvel-links"><a href="series?series={{$resourceUri}}">{{.Series.Name}}</a></div>
+            {{range .Dates}}
+                {{if equals .Type "onsaleDate"}}
+                    <div class="marvel-links">{{marvelUnlimitedDate .Date}}</div>
+                {{end}}
+            {{end}}
             {{range .Urls}}
                 {{if equals .Type "detail"}}
                     <div class="marvel-links"><a href="{{.Url}}" target="_blank">Details</a></div>

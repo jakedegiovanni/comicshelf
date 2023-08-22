@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -212,7 +213,7 @@ func (m *MarvelClient) GetWeeklyComics(t time.Time) (*DataWrapper[MarvelComic], 
 		t = t.AddDate(0, 0, -1)
 	}
 
-	first, last := m.weekRange(t.AddDate(0, monthOffset, 0))
+	first, last := m.weekRange(marvelUnlimitedDate(t, monthOffset))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout))
 
 	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
@@ -234,6 +235,25 @@ func (m *MarvelClient) weekRange(t time.Time) (time.Time, time.Time) {
 	t = t.AddDate(0, 0, -7)
 
 	return t, t.AddDate(0, 0, 6)
+}
+
+func marvelUnlimitedDate(t time.Time, monthOffset int) time.Time {
+	return t.AddDate(0, monthOffset, 0)
+}
+
+func DateResponseToMarvelUnlimitedDate(date string) string {
+	t, err := time.Parse("2006-01-02T03:04:05-0700", date)
+	if err != nil {
+		s := strings.Split(date, "T")
+		if len(s) == 0 {
+			return "badDate"
+		}
+
+		return s[0]
+	}
+
+	t = marvelUnlimitedDate(t, -1*monthOffset) // todo - move up to next monday
+	return t.Format(layout)
 }
 
 func request[T any](
