@@ -7,6 +7,8 @@ import (
 	"os"
 	"sort"
 	"sync"
+
+	"github.com/jakedegiovanni/comicshelf/static"
 )
 
 const SeriesEndpoint = "/marvel-unlimited/series"
@@ -78,7 +80,7 @@ func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return result.Data.Results[i].IssueNumber < result.Data.Results[j].IssueNumber
 	})
 
-	content := Content{
+	content := static.Content{
 		Date:         r.URL.Query().Get("date"),
 		PageEndpoint: SeriesEndpoint,
 		Resp:         result,

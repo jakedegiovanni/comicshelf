@@ -1,103 +1,58 @@
 package main
 
 import (
-	"embed"
-	"html/template"
-	"io/fs"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"runtime/debug"
-	"strings"
-	"syscall"
+	"context"
+	"errors"
+	"fmt"
+	"log"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-//go:embed static
-var static embed.FS
-
-type Content struct {
-	Date         string
-	PageEndpoint string
-	Resp         interface{}
-}
-
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
-	}))
+	cfg := DefaultConfig()
+	v := viper.New()
 
-	db, err := NewDb("db.json", logger)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
+	rootCmd := &cobra.Command{
+		Use: "comicshelf",
 	}
 
-	defer HandlePanic(logger)
-	defer db.Shutdown()
+	rootCmd.AddCommand(Server(&cfg, v))
 
-	client := NewMarvelClient(logger)
+	rootCmd.PersistentFlags().StringVarP(&cfg.File, "config", "c", cfg.File, "if not present will check for existence of config.yml in current working directory. If none present will be ignored.")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Logging.Level, "loglevel", "l", cfg.Logging.Level, "DEBUG|INFO|WARN|ERROR")
+	v.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup("loglevel"))
 
-	tmpl := template.Must(
-		template.
-			New("marvel-unlimited").
-			Funcs(template.FuncMap{
-				"contains": func(s1, s2 string) bool {
-					return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
-				},
-				"equals":    strings.EqualFold,
-				"following": db.Following,
-			}).
-			ParseFS(static, "**/index.html", "**/marvel-unlimited.html", "**/comic-card.html", "**/follow.html", "**/unfollow.html"),
-	)
-
-	comics := NewComics(tmpl, client, db, logger)
-	series := NewSeries(tmpl, client, db, logger)
-	api := NewApi(logger, db, tmpl)
-
-	router := chi.NewRouter()
-
-	router.Use(ServerLogger(logger))
-	router.Use(middleware.Recoverer)
-
-	router.Get(ComicsEndpoint, comics.ServeHTTP)
-	router.Get(SeriesEndpoint, series.ServeHTTP)
-	router.Post(TrackEndpoint, api.Track)
-
-	f, err := fs.Sub(static, "static")
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-	router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(f))))
-
-	srv := &http.Server{
-		Handler: router,
-		Addr:    "127.0.0.1:8080",
-	}
-
-	go func() {
-		err = srv.ListenAndServe()
-		if err != nil {
-			logger.Error(err.Error())
-			os.Exit(1)
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if cfg.File != "" {
+			v.SetConfigFile(cfg.File)
+		} else {
+			v.SetConfigName("config")
+			v.SetConfigType("yml")
+			v.AddConfigPath(".")
 		}
-	}()
 
-	logger.Info("server ready to accept connections")
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		err := v.ReadInConfig()
+		if err != nil {
+			var notFound viper.ConfigFileNotFoundError
+			if !errors.As(err, &notFound) {
+				return fmt.Errorf("could not read config: %w", err)
+			}
+		}
 
-	<-c
-}
+		var cfg AppConfig
+		err = v.Unmarshal(&cfg)
+		if err != nil {
+			return err
+		}
+		log.Println(cfg)
 
-func HandlePanic(logger *slog.Logger) {
-	if r := recover(); r != nil {
-		logger.Error("recovered", slog.Any("r", r))
-		debug.PrintStack()
+		ctx := cmd.Context()
+		ctx = context.WithValue(ctx, ConfigCtxKey, &cfg)
+		cmd.SetContext(ctx)
+		return nil
 	}
+
+	cobra.CheckErr(rootCmd.ExecuteContext(context.Background()))
 }
