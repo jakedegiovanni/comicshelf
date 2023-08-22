@@ -252,7 +252,13 @@ func DateResponseToMarvelUnlimitedDate(date string) string {
 		return s[0]
 	}
 
-	t = marvelUnlimitedDate(t, -1*monthOffset) // todo - move up to next monday
+	t = marvelUnlimitedDate(t, -1*monthOffset)
+	t = t.AddDate(0, 0, 7)
+
+	for t.Weekday() != time.Monday {
+		t = t.AddDate(0, 0, -1)
+	}
+
 	return t.Format(layout)
 }
 
