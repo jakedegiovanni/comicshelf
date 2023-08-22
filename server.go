@@ -26,7 +26,7 @@ func Server(cfg *AppConfig, v *viper.Viper) *cobra.Command {
 				return err
 			}
 
-			logger, err := cfg.Logging.Logger(os.Stdout)
+			logger, err := cfg.Logging.Logger()
 			if err != nil {
 				return err
 			}

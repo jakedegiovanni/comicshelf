@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 )
 
 var ConfigCtxKey = &CtxKey{Key: "cfg"}
@@ -21,7 +22,8 @@ type AppConfig struct {
 }
 
 type LoggingConfig struct {
-	Level string
+	Level    string
+	Disabled bool
 }
 
 func (l LoggingConfig) SlogLevel() (slog.Level, error) {
@@ -30,11 +32,21 @@ func (l LoggingConfig) SlogLevel() (slog.Level, error) {
 	return lvl, err
 }
 
-func (l LoggingConfig) Logger(w io.Writer) (*slog.Logger, error) {
+func (l LoggingConfig) Writer() io.Writer {
+	if l.Disabled {
+		return io.Discard
+	}
+
+	return os.Stdout
+}
+
+func (l LoggingConfig) Logger() (*slog.Logger, error) {
 	lvl, err := l.SlogLevel()
 	if err != nil {
 		return nil, fmt.Errorf("unknown slog level: %w", err)
 	}
+
+	w := l.Writer()
 
 	logger := slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{
 		AddSource: true,
@@ -51,7 +63,8 @@ type ServerConfig struct {
 func DefaultConfig() AppConfig {
 	return AppConfig{
 		Logging: LoggingConfig{
-			Level: "DEBUG",
+			Level:    "DEBUG",
+			Disabled: false,
 		},
 		Server: ServerConfig{
 			Address: "127.0.0.1:8080",

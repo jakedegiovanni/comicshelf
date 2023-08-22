@@ -9,6 +9,7 @@
 - view when issues in series will be released (in progress)
     - view all comics within a series (complete)
     - show marvel unlimited release date on comic card (in progress)
+        - onsaleDate in the dates array
 - be able to see which series you follow
 - be notified when issues in a series are released
 - ignore results.json, better caching of results (complete)

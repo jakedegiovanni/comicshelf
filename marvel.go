@@ -10,6 +10,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -140,6 +142,51 @@ type MarvelClient struct {
 	etagCache map[string]interface{}
 	mu        *sync.Mutex
 	logger    *slog.Logger
+}
+
+func NewMarvelCommand() *cobra.Command {
+	cmd := &cobra.Command{Use: "marvel"}
+
+	comics := &cobra.Command{Use: "comics"}
+
+	weekly := &cobra.Command{
+		Use: "weekly",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := GetConfigFromCtx(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			logger, err := cfg.Logging.Logger()
+			if err != nil {
+				return err
+			}
+
+			client := NewMarvelClient(logger)
+
+			c, err := client.GetWeeklyComics(time.Now())
+			if err != nil {
+				return err
+			}
+
+			b, err := json.MarshalIndent(c, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			_, err = os.Stdout.Write(b)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	comics.AddCommand(weekly)
+	cmd.AddCommand(comics)
+
+	return cmd
 }
 
 func NewMarvelClient(logger *slog.Logger) *MarvelClient {
