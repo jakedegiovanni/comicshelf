@@ -2,31 +2,33 @@ mod marvel;
 mod template;
 
 use crate::marvel::Marvel;
-use axum::{extract::State, http::StatusCode, response::Html, routing::get};
+use axum::{extract::State, http::StatusCode, response::Html, routing::get, Extension};
 
 use hyper::client::HttpConnector;
 
 use hyper_tls::HttpsConnector;
 
+use axum::extract::FromRef;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use tera::{Context, Tera};
+use tower::ServiceBuilder;
+use tower_http::add_extension::AddExtensionLayer;
 
 use tower_http::services::ServeDir;
 
 struct ComicShelf {
     tera: Tera,
-    client: hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
+    marvel_client: Marvel,
 }
 
 impl ComicShelf {
-    fn new(tera: Tera, client: hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
-        ComicShelf { tera, client }
-    }
-
-    fn marvel_client(&self) -> Marvel {
-        Marvel::new(&self.client)
+    fn new(tera: Tera, marvel_client: Marvel) -> Self {
+        ComicShelf {
+            tera,
+            marvel_client,
+        }
     }
 }
 
@@ -37,8 +39,7 @@ async fn marvel_unlimited_comics(
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
     ctx.insert("Date", "2023-08-12");
 
-    let client = state.marvel_client();
-    let result = client.weekly_comics().await;
+    let result = state.marvel_client.weekly_comics().await;
 
     ctx.insert("results", &result);
 
@@ -64,8 +65,9 @@ async fn main() {
 
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+    let marvel_client = Marvel::new(&client);
 
-    let state = Arc::new(ComicShelf::new(tera, client));
+    let state = Arc::new(ComicShelf::new(tera, marvel_client));
 
     let app = axum::Router::new()
         .route("/marvel-unlimited/comics", get(marvel_unlimited_comics))

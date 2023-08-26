@@ -1,9 +1,14 @@
 use crate::template::DataWrapper;
+use axum::extract::FromRef;
 use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::Request;
 use hyper_tls::HttpsConnector;
-use tower::{Service, ServiceBuilder};
+use std::borrow::Cow;
+use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
+use tokio::sync::Mutex;
+use tower::{Service, ServiceBuilder, ServiceExt};
 
 type HyperService = dyn Service<
         Request<hyper::Body>,
@@ -13,13 +18,15 @@ type HyperService = dyn Service<
     > + Send
     + Sync;
 
-pub struct Marvel<'a> {
-    client: &'a hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
+pub struct Marvel {
+    svc: Arc<Mutex<HyperService>>,
 }
 
-impl<'a> Marvel<'a> {
-    pub fn new(client: &'a hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
-        Marvel { client }
+impl Marvel {
+    pub fn new(client: &hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
+        let svc = Marvel::svc(client);
+        let svc = Arc::new(Mutex::new(svc));
+        Marvel { svc }
     }
 
     fn uri_middleware(req: Request<hyper::Body>) -> Request<hyper::Body> {
@@ -74,27 +81,30 @@ impl<'a> Marvel<'a> {
         Request::from_parts(p, b)
     }
 
-    fn svc(&self) -> Box<HyperService> {
+    fn svc(
+        client: &hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
+    ) -> Box<HyperService> {
         let svc = ServiceBuilder::new()
             .map_request(Marvel::uri_middleware)
             .map_request(Marvel::auth_middleware)
-            .service(self.client.clone());
+            .service(client.clone());
 
         Box::new(svc)
     }
 
     pub async fn weekly_comics(&self) -> DataWrapper {
-        let mut svc = self.svc();
-
         let (date, date2) = self.week_range(Utc::now());
-
         let date = self.fmt_date(&date);
         let date2 = self.fmt_date(&date2);
 
         let uri = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={},{}&hasDigitalIssue=true&orderBy=issueNumber&limit=100", date, date2);
         let req = Request::get(uri).body(hyper::Body::empty()).unwrap();
 
-        let result = svc.call(req).await.unwrap().into_body();
+        let result = {
+            let mut svc = self.svc.lock().await;
+            svc.call(req).await.unwrap().into_body()
+        };
+
         let result: DataWrapper = serde_json::from_slice(
             hyper::body::to_bytes(result)
                 .await
