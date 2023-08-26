@@ -3,16 +3,16 @@ mod template;
 
 use crate::marvel::Marvel;
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
-use chrono::{Datelike, Days, Months, Utc, Weekday};
+
 use hyper::client::HttpConnector;
-use hyper::Request;
+
 use hyper_tls::HttpsConnector;
-use serde::{Deserialize, Serialize};
+
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tera::{Context, Tera};
-use tower::{Service, ServiceBuilder};
+
 use tower_http::services::ServeDir;
 
 struct ComicShelf {
