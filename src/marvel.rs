@@ -1,14 +1,13 @@
-use crate::template::DataWrapper;
-use axum::extract::FromRef;
+use std::sync::Arc;
+
 use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::Request;
 use hyper_tls::HttpsConnector;
-use std::borrow::Cow;
-use std::cell::RefCell;
-use std::sync::{Arc, RwLock};
 use tokio::sync::Mutex;
-use tower::{Service, ServiceBuilder, ServiceExt};
+use tower::{Service, ServiceBuilder};
+
+use crate::template::DataWrapper;
 
 type HyperService = dyn Service<
         Request<hyper::Body>,

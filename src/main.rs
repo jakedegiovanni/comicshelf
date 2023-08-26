@@ -1,22 +1,16 @@
-mod marvel;
-mod template;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use axum::{extract::State, http::StatusCode, response::Html, routing::get};
+use hyper_tls::HttpsConnector;
+use serde_json::Value;
+use tera::{Context, Tera};
+use tower_http::services::ServeDir;
 
 use crate::marvel::Marvel;
-use axum::{extract::State, http::StatusCode, response::Html, routing::get, Extension};
 
-use hyper::client::HttpConnector;
-
-use hyper_tls::HttpsConnector;
-
-use axum::extract::FromRef;
-use serde_json::Value;
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use tera::{Context, Tera};
-use tower::ServiceBuilder;
-use tower_http::add_extension::AddExtensionLayer;
-
-use tower_http::services::ServeDir;
+mod marvel;
+mod template;
 
 struct ComicShelf {
     tera: Tera,
