@@ -1,5 +1,5 @@
 use crate::template::DataWrapper;
-use chrono::{Datelike, Days, Months, Utc, Weekday};
+use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::Request;
 use hyper_tls::HttpsConnector;
@@ -13,20 +13,13 @@ type HyperService = dyn Service<
     > + Send
     + Sync;
 
-pub struct Marvel {
-    svc: Box<HyperService>,
+pub struct Marvel<'a> {
+    client: &'a hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
 }
 
-impl Marvel {
-    pub fn new(client: &hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
-        let svc = ServiceBuilder::new()
-            .map_request(Marvel::uri_middleware)
-            .map_request(Marvel::auth_middleware)
-            .service(client.clone());
-
-        let svc = Box::new(svc);
-
-        Marvel { svc }
+impl<'a> Marvel<'a> {
+    pub fn new(client: &'a hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
+        Marvel { client }
     }
 
     fn uri_middleware(req: Request<hyper::Body>) -> Request<hyper::Body> {
@@ -81,11 +74,41 @@ impl Marvel {
         Request::from_parts(p, b)
     }
 
-    pub async fn weekly_comics(self) -> DataWrapper {
-        let mut svc = self.svc;
+    fn svc(&self) -> Box<HyperService> {
+        let svc = ServiceBuilder::new()
+            .map_request(Marvel::uri_middleware)
+            .map_request(Marvel::auth_middleware)
+            .service(self.client.clone());
 
-        let date = Utc::now();
-        let mut date = date.checked_sub_months(Months::new(3)).unwrap();
+        Box::new(svc)
+    }
+
+    pub async fn weekly_comics(&self) -> DataWrapper {
+        let mut svc = self.svc();
+
+        let (date, date2) = self.week_range(Utc::now());
+
+        let date = self.fmt_date(&date);
+        let date2 = self.fmt_date(&date2);
+
+        let uri = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={},{}&hasDigitalIssue=true&orderBy=issueNumber&limit=100", date, date2);
+        let req = Request::get(uri).body(hyper::Body::empty()).unwrap();
+
+        let result = svc.call(req).await.unwrap().into_body();
+        let result: DataWrapper = serde_json::from_slice(
+            hyper::body::to_bytes(result)
+                .await
+                .unwrap()
+                .iter()
+                .as_slice(),
+        )
+        .unwrap();
+
+        result
+    }
+
+    fn week_range(&self, time: DateTime<Utc>) -> (DateTime<Utc>, DateTime<Utc>) {
+        let mut date = time.checked_sub_months(Months::new(3)).unwrap();
         loop {
             if date.weekday() == Weekday::Sun {
                 break;
@@ -97,19 +120,10 @@ impl Marvel {
         date = date.checked_sub_days(Days::new(7)).unwrap();
         let date2 = date.checked_add_days(Days::new(6)).unwrap();
 
-        let date = date.format("%Y-%m-%d").to_string();
-        let date2 = date2.format("%Y-%m-%d").to_string();
+        (date, date2)
+    }
 
-        let req = Request::get(format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={},{}&hasDigitalIssue=true&orderBy=issueNumber&limit=100", date, date2)).body(hyper::Body::empty()).unwrap();
-        let result = svc.call(req).await.unwrap().into_body();
-        let result: DataWrapper = serde_json::from_slice(
-            hyper::body::to_bytes(result)
-                .await
-                .unwrap()
-                .iter()
-                .as_slice(),
-        )
-        .unwrap();
-        result
+    fn fmt_date(&self, date: &DateTime<Utc>) -> String {
+        date.format("%Y-%m-%d").to_string()
     }
 }
