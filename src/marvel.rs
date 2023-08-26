@@ -100,7 +100,7 @@ impl Marvel {
         let req = Request::get(uri).body(hyper::Body::empty()).unwrap();
 
         let result = {
-            let mut svc = self.svc.lock().await;
+            let mut svc = self.svc.lock().await; // todo - future bottleneck
             svc.call(req).await.unwrap().into_body()
         };
 
