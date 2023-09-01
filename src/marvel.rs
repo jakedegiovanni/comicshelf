@@ -2,7 +2,6 @@ use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::{Body, Request, Response};
 use hyper_tls::HttpsConnector;
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower::util::BoxCloneService;
 use tower::{Service, ServiceBuilder};
@@ -12,13 +11,13 @@ use crate::template::DataWrapper;
 type HyperService = BoxCloneService<Request<Body>, Response<Body>, hyper::Error>;
 
 pub struct Marvel {
-    svc: Arc<Mutex<HyperService>>,
+    svc: Mutex<HyperService>,
 }
 
 impl Marvel {
     pub fn new(client: &hyper::Client<HttpsConnector<HttpConnector>, Body>) -> Self {
         let svc = Marvel::svc(client);
-        let svc = Arc::new(Mutex::new(svc));
+        let svc = Mutex::new(svc);
         Marvel { svc }
     }
 
