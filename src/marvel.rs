@@ -1,9 +1,8 @@
-use std::sync::Arc;
-
 use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::{Body, Request, Response};
 use hyper_tls::HttpsConnector;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower::util::BoxCloneService;
 use tower::{Service, ServiceBuilder};
@@ -17,7 +16,7 @@ pub struct Marvel {
 }
 
 impl Marvel {
-    pub fn new(client: &hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>) -> Self {
+    pub fn new(client: &hyper::Client<HttpsConnector<HttpConnector>, Body>) -> Self {
         let svc = Marvel::svc(client);
         let svc = Arc::new(Mutex::new(svc));
         Marvel { svc }
@@ -90,12 +89,11 @@ impl Marvel {
         let date2 = self.fmt_date(&date2);
 
         let uri = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={},{}&hasDigitalIssue=true&orderBy=issueNumber&limit=100", date, date2);
-        let req = Request::get(uri).body(hyper::Body::empty()).unwrap();
+        let req = Request::get(uri).body(Body::empty()).unwrap();
 
-        let result = {
-            let mut svc = self.svc.lock().await; // todo - future bottleneck
-            svc.call(req).await.unwrap().into_body()
-        };
+        // todo - anyway to avoid the lock here whilst still keeping the Marvel struct shared?
+        let mut svc = { self.svc.lock().await.clone() };
+        let result = svc.call(req).await.unwrap().into_body();
 
         let result: DataWrapper = serde_json::from_slice(
             hyper::body::to_bytes(result)
