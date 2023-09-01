@@ -2,20 +2,15 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
-use hyper::Request;
+use hyper::{Body, Request, Response};
 use hyper_tls::HttpsConnector;
 use tokio::sync::Mutex;
+use tower::util::BoxCloneService;
 use tower::{Service, ServiceBuilder};
 
 use crate::template::DataWrapper;
 
-type HyperService = dyn Service<
-        Request<hyper::Body>,
-        Error = hyper::Error,
-        Future = hyper::client::ResponseFuture,
-        Response = hyper::Response<hyper::Body>,
-    > + Send
-    + Sync;
+type HyperService = BoxCloneService<Request<Body>, Response<Body>, hyper::Error>;
 
 pub struct Marvel {
     svc: Arc<Mutex<HyperService>>,
@@ -28,7 +23,7 @@ impl Marvel {
         Marvel { svc }
     }
 
-    fn uri_middleware(req: Request<hyper::Body>) -> Request<hyper::Body> {
+    fn uri_middleware(req: Request<Body>) -> Request<Body> {
         let (mut p, b) = req.into_parts();
 
         let mut up = p.uri.into_parts();
@@ -41,7 +36,7 @@ impl Marvel {
         Request::from_parts(p, b)
     }
 
-    fn auth_middleware(req: Request<hyper::Body>) -> Request<hyper::Body> {
+    fn auth_middleware(req: Request<Body>) -> Request<Body> {
         let (mut p, b) = req.into_parts();
 
         let mut up = p.uri.into_parts();
@@ -80,15 +75,13 @@ impl Marvel {
         Request::from_parts(p, b)
     }
 
-    fn svc(
-        client: &hyper::Client<HttpsConnector<HttpConnector>, hyper::Body>,
-    ) -> Box<HyperService> {
+    fn svc(client: &hyper::Client<HttpsConnector<HttpConnector>, Body>) -> HyperService {
         let svc = ServiceBuilder::new()
             .map_request(Marvel::uri_middleware)
             .map_request(Marvel::auth_middleware)
             .service(client.clone());
 
-        Box::new(svc)
+        BoxCloneService::new(svc)
     }
 
     pub async fn weekly_comics(&self) -> DataWrapper {
