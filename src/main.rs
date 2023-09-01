@@ -10,7 +10,7 @@ use tower_http::services::ServeDir;
 use crate::marvel::Marvel;
 
 mod marvel;
-mod template;
+mod middleware;
 
 struct ComicShelf {
     tera: Tera,
