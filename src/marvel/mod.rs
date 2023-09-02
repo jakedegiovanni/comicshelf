@@ -1,17 +1,19 @@
-use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
-use hyper::client::HttpConnector;
-use hyper::{Body, Client, Request, Response};
-use hyper_tls::HttpsConnector;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+
+use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
+use hyper::client::HttpConnector;
+use hyper::{Body, Client, Request};
+use hyper_tls::HttpsConnector;
 use tokio::sync::Mutex;
 use tower::util::BoxCloneService;
 use tower::{Service, ServiceBuilder};
 
-use crate::marvel::etag::EtagMiddlewareLayer;
-use crate::middleware::uri::UriMiddlewareLayer;
 use auth::AuthMiddlewareLayer;
 use template::DataWrapper;
+
+use crate::marvel::etag::EtagMiddlewareLayer;
+use crate::middleware::uri::UriMiddlewareLayer;
 
 mod auth;
 mod etag;

@@ -1,16 +1,13 @@
-use crate::marvel::template::DataWrapper;
-use futures_util::future::{BoxFuture, LocalBoxFuture};
-use hyper::body::Bytes;
-use hyper::{Body, Request, Response, StatusCode};
-use pin_project::pin_project;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::future::Future;
-use std::pin::Pin;
-use std::process::Output;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
+
+use futures_util::future::BoxFuture;
+use hyper::{Body, Request, Response, StatusCode};
 use tower::{Layer, Service};
+
+use crate::marvel::template::DataWrapper;
 
 type EtagCache = Arc<RwLock<HashMap<String, DataWrapper>>>;
 
