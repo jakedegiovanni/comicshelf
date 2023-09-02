@@ -48,7 +48,7 @@ where
     S::Future: Send,
 {
     type Response = DataWrapper;
-    type Error = S::Error;
+    type Error = S::Error; // todo use anyhow::Error
     type Future = BoxFuture<'static, Result<DataWrapper, S::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
