@@ -9,7 +9,11 @@ use tower::{Layer, Service};
 
 use crate::marvel::template::DataWrapper;
 
-type EtagCache = Arc<RwLock<HashMap<String, DataWrapper>>>;
+pub type EtagCache = Arc<RwLock<HashMap<String, DataWrapper>>>;
+
+pub fn new_etag_cache() -> EtagCache {
+    Arc::new(RwLock::new(HashMap::new()))
+}
 
 pub struct EtagMiddlewareLayer {
     cache: EtagCache,

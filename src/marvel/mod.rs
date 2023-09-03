@@ -12,7 +12,7 @@ use tower::{Service, ServiceBuilder};
 use auth::AuthMiddlewareLayer;
 use template::DataWrapper;
 
-use crate::marvel::etag::EtagMiddlewareLayer;
+use crate::marvel::etag::{new_etag_cache, EtagMiddlewareLayer};
 use crate::middleware::uri::UriMiddlewareLayer;
 
 mod auth;
@@ -34,9 +34,7 @@ impl Marvel {
 
     fn svc(client: &Client<HttpsConnector<HttpConnector>, Body>) -> HyperService {
         let svc = ServiceBuilder::new()
-            .layer(EtagMiddlewareLayer::new(Arc::new(RwLock::new(
-                HashMap::new(),
-            ))))
+            .layer(EtagMiddlewareLayer::new(new_etag_cache()))
             .layer(UriMiddlewareLayer::new("gateway.marvel.com", "https"))
             .layer(AuthMiddlewareLayer::new(
                 include_str!("../../pub.txt"), // todo: formalize, this is janky
