@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -223,8 +224,22 @@ func (m *MarvelClient) GetComic(endpoint string) (*DataWrapper[MarvelComic], err
 	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
 }
 
-func (m *MarvelClient) GetSeries(endpoint string) (*DataWrapper[MarvelSeries], error) {
-	return request[MarvelSeries](endpoint, m.mu, m.etagCache, m.client, m.logger)
+func (m *MarvelClient) GetComicsWithinSeries(seriesEndpoint string) (*DataWrapper[MarvelComic], error) {
+	uri, err := url.Parse(seriesEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse endpoint for series comics retrieval: %w", err)
+	}
+
+	uri.Path = fmt.Sprintf("%s/comics", uri.Path)
+	query := uri.Query()
+	query.Add("format", "comic")
+	query.Add("formatType", "comic")
+	query.Add("noVariants", "true")
+	query.Add("hasDigitalIssue", "true")
+	query.Add("orderBy", "issueNumber")
+	query.Add("limit", "100")
+	uri.RawQuery = query.Encode()
+	return request[MarvelComic](uri.String(), m.mu, m.etagCache, m.client, m.logger)
 }
 
 func (m *MarvelClient) weekRange(t time.Time) (time.Time, time.Time) {

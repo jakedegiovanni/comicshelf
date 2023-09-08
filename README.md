@@ -10,6 +10,8 @@
     - view all comics within a series (complete)
     - show marvel unlimited release date on comic card (complete)
 - series page doesn't show all items in series
+    - add page size (complete)
+    - support pagination on the pages
 - be able to see which series you follow
 - be notified when issues in a series are released
 - ignore results.json, better caching of results (complete)
