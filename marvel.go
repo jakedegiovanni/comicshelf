@@ -7,9 +7,13 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -103,6 +107,11 @@ type Url struct {
 	Url  string `json:"url"`
 }
 
+type Date struct {
+	Type string `json:"type"`
+	Date string `json:"date"`
+}
+
 type Thumbnail struct {
 	Path      string `json:"path"`
 	Extension string `json:"extension"`
@@ -127,6 +136,7 @@ type MarvelComic struct {
 	Format      string `json:"format"`
 	IssueNumber int    `json:"issueNumber"`
 	Series      Item   `json:"series"`
+	Dates       []Date `json:"dates"`
 }
 
 type MarvelClient struct {
@@ -134,6 +144,51 @@ type MarvelClient struct {
 	etagCache map[string]interface{}
 	mu        *sync.Mutex
 	logger    *slog.Logger
+}
+
+func NewMarvelCommand() *cobra.Command {
+	cmd := &cobra.Command{Use: "marvel"}
+
+	comics := &cobra.Command{Use: "comics"}
+
+	weekly := &cobra.Command{
+		Use: "weekly",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := GetConfigFromCtx(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			logger, err := cfg.Logging.Logger()
+			if err != nil {
+				return err
+			}
+
+			client := NewMarvelClient(logger)
+
+			c, err := client.GetWeeklyComics(time.Now())
+			if err != nil {
+				return err
+			}
+
+			b, err := json.MarshalIndent(c, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			_, err = os.Stdout.Write(b)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	comics.AddCommand(weekly)
+	cmd.AddCommand(comics)
+
+	return cmd
 }
 
 func NewMarvelClient(logger *slog.Logger) *MarvelClient {
@@ -159,7 +214,7 @@ func (m *MarvelClient) GetWeeklyComics(t time.Time) (*DataWrapper[MarvelComic], 
 		t = t.AddDate(0, 0, -1)
 	}
 
-	first, last := m.weekRange(t.AddDate(0, monthOffset, 0))
+	first, last := m.weekRange(marvelUnlimitedDate(t, monthOffset))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(layout), last.Format(layout))
 
 	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
@@ -169,8 +224,22 @@ func (m *MarvelClient) GetComic(endpoint string) (*DataWrapper[MarvelComic], err
 	return request[MarvelComic](endpoint, m.mu, m.etagCache, m.client, m.logger)
 }
 
-func (m *MarvelClient) GetSeries(endpoint string) (*DataWrapper[MarvelSeries], error) {
-	return request[MarvelSeries](endpoint, m.mu, m.etagCache, m.client, m.logger)
+func (m *MarvelClient) GetComicsWithinSeries(seriesEndpoint string) (*DataWrapper[MarvelComic], error) {
+	uri, err := url.Parse(seriesEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("could not parse endpoint for series comics retrieval: %w", err)
+	}
+
+	uri.Path = fmt.Sprintf("%s/comics", uri.Path)
+	query := uri.Query()
+	query.Add("format", "comic")
+	query.Add("formatType", "comic")
+	query.Add("noVariants", "true")
+	query.Add("hasDigitalIssue", "true")
+	query.Add("orderBy", "issueNumber")
+	query.Add("limit", "100")
+	uri.RawQuery = query.Encode()
+	return request[MarvelComic](uri.String(), m.mu, m.etagCache, m.client, m.logger)
 }
 
 func (m *MarvelClient) weekRange(t time.Time) (time.Time, time.Time) {
@@ -181,6 +250,31 @@ func (m *MarvelClient) weekRange(t time.Time) (time.Time, time.Time) {
 	t = t.AddDate(0, 0, -7)
 
 	return t, t.AddDate(0, 0, 6)
+}
+
+func marvelUnlimitedDate(t time.Time, monthOffset int) time.Time {
+	return t.AddDate(0, monthOffset, 0)
+}
+
+func DateResponseToMarvelUnlimitedDate(date string) string {
+	t, err := time.Parse("2006-01-02T03:04:05-0700", date)
+	if err != nil {
+		s := strings.Split(date, "T")
+		if len(s) == 0 {
+			return "badDate"
+		}
+
+		return s[0]
+	}
+
+	t = marvelUnlimitedDate(t, -1*monthOffset)
+	t = t.AddDate(0, 0, 7)
+
+	for t.Weekday() != time.Monday {
+		t = t.AddDate(0, 0, -1)
+	}
+
+	return t.Format(layout)
 }
 
 func request[T any](
