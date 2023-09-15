@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-
 use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::{Body, Client, Request};
