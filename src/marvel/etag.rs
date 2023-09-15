@@ -7,7 +7,7 @@ use futures_util::future::BoxFuture;
 use hyper::{Body, Request, Response, StatusCode};
 use tower::{Layer, Service};
 
-use crate::marvel::template::DataWrapper;
+use super::template::DataWrapper;
 
 pub type EtagCache = Arc<RwLock<HashMap<String, DataWrapper>>>;
 

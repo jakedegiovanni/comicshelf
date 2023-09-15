@@ -2,14 +2,15 @@ use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::client::HttpConnector;
 use hyper::{Body, Client, Request};
 use hyper_tls::HttpsConnector;
+
 use tokio::sync::Mutex;
 use tower::util::BoxCloneService;
 use tower::{Service, ServiceBuilder};
 
-use auth::AuthMiddlewareLayer;
-use template::DataWrapper;
+use self::auth::AuthMiddlewareLayer;
+use self::etag::{new_etag_cache, EtagMiddlewareLayer};
+use self::template::DataWrapper;
 
-use crate::marvel::etag::{new_etag_cache, EtagMiddlewareLayer};
 use crate::middleware::uri::UriMiddlewareLayer;
 
 mod auth;
