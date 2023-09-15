@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/jakedegiovanni/comicshelf/static"
 )
 
 const ComicsEndpoint = "/marvel-unlimited/comics"
@@ -45,7 +47,7 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1) // todo shouldn't bee doing this
 	}
 
-	content := Content{
+	content := static.Content{
 		Date:         r.URL.Query().Get("date"),
 		PageEndpoint: ComicsEndpoint,
 		Resp:         resp,

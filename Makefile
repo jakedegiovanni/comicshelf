@@ -8,7 +8,7 @@ build: clean
 
 .PHONY: run
 run:
-	go run .
+	go run . server
 
 .PHONY: generate
 generate:
