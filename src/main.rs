@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, response::Html, routing::get};
+use axum::{debug_handler, extract::State, http::StatusCode, response::Html, routing::get};
 use hyper_tls::HttpsConnector;
 use serde_json::Value;
 use tera::{Context, Tera};
@@ -26,6 +26,7 @@ impl ComicShelf {
     }
 }
 
+#[debug_handler]
 async fn marvel_unlimited_comics(
     State(state): State<Arc<ComicShelf>>,
 ) -> Result<Html<String>, StatusCode> {
