@@ -1,3 +1,13 @@
+LINT_VERSION := 1.54.2
+
+.PHONY: install
+install:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v${LINT_VERSION}
+
+.PHONY: lint
+lint:
+	golangci-lint run -v ./...
+
 .PHONY: clean
 clean:
 	rm -rf bin
