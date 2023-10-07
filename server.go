@@ -120,7 +120,7 @@ func Server(cfg *AppConfig, v *viper.Viper) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVarP(&cfg.Server.Address, "address", "a", cfg.Server.Address, "")
-	v.BindPFlag("server.address", cmd.PersistentFlags().Lookup("address"))
+	_ = v.BindPFlag("server.address", cmd.PersistentFlags().Lookup("address"))
 
 	return cmd
 }

@@ -23,10 +23,10 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.File, "config", "c", cfg.File, "if not present will check for existence of config.yml in current working directory. If none present will be ignored.")
 
 	rootCmd.PersistentFlags().StringVarP(&cfg.Logging.Level, "loglevel", "l", cfg.Logging.Level, "DEBUG|INFO|WARN|ERROR")
-	v.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup("loglevel"))
+	_ = v.BindPFlag("logging.level", rootCmd.PersistentFlags().Lookup("loglevel"))
 
 	rootCmd.PersistentFlags().BoolVarP(&cfg.Logging.Disabled, "silent", "", cfg.Logging.Disabled, "disable logging")
-	v.BindPFlag("logging.disabled", rootCmd.PersistentFlags().Lookup("silent"))
+	_ = v.BindPFlag("logging.disabled", rootCmd.PersistentFlags().Lookup("silent"))
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if cfg.File != "" {
