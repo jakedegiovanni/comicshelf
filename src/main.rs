@@ -1,24 +1,28 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{debug_handler, extract::State, http::StatusCode, response::Html, routing::get};
+use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use hyper_tls::HttpsConnector;
 use serde_json::Value;
 use tera::{Context, Tera};
+use tower::ServiceBuilder;
 use tower_http::services::ServeDir;
 
-use crate::marvel::Marvel;
+use crate::marvel::{MarvelService, Marvel};
+use crate::marvel::auth::AuthMiddlewareLayer;
+use crate::marvel::etag::{EtagMiddlewareLayer, new_etag_cache};
+use crate::middleware::uri::UriMiddlewareLayer;
 
 mod marvel;
 mod middleware;
 
-struct ComicShelf {
+struct ComicShelf<S> {
     tera: Tera,
-    marvel_client: Marvel,
+    marvel_client: Marvel<S>,
 }
 
-impl ComicShelf {
-    fn new(tera: Tera, marvel_client: Marvel) -> Self {
+impl<S> ComicShelf<S> {
+    fn new(tera: Tera, marvel_client: Marvel<S>) -> Self {
         ComicShelf {
             tera,
             marvel_client,
@@ -26,10 +30,12 @@ impl ComicShelf {
     }
 }
 
-#[debug_handler]
-async fn marvel_unlimited_comics(
-    State(state): State<Arc<ComicShelf>>,
-) -> Result<Html<String>, StatusCode> {
+async fn marvel_unlimited_comics<S>(
+    State(state): State<Arc<ComicShelf<S>>>,
+) -> Result<Html<String>, StatusCode>
+where
+    S: MarvelService
+{
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
     ctx.insert("Date", "2023-08-12");
@@ -60,7 +66,15 @@ async fn main() {
 
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-    let marvel_client = Marvel::new(&client);
+    let svc = ServiceBuilder::new()
+        .layer(EtagMiddlewareLayer::new(new_etag_cache()))
+        .layer(UriMiddlewareLayer::new("gateway.marvel.com", "https"))
+        .layer(AuthMiddlewareLayer::new(
+            include_str!("../pub.txt"), // todo: formalize, this is janky
+            include_str!("../priv.txt"),
+        ))
+        .service(client.clone());
+    let marvel_client = Marvel::new(svc);
 
     let state = Arc::new(ComicShelf::new(tera, marvel_client));
 

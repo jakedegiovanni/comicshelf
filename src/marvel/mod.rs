@@ -1,47 +1,46 @@
-use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
-use hyper::client::HttpConnector;
-use hyper::{Body, Client, Request};
-use hyper_tls::HttpsConnector;
+use chrono::{Datelike, DateTime, Days, Months, Utc, Weekday};
+use futures_util::future::BoxFuture;
+use hyper::{Body, Request};
+use tower::Service;
 
-use tokio::sync::Mutex;
-use tower::util::BoxCloneService;
-use tower::{Service, ServiceBuilder};
-
-use self::auth::AuthMiddlewareLayer;
-use self::etag::{new_etag_cache, EtagMiddlewareLayer};
 use self::template::DataWrapper;
 
-use crate::middleware::uri::UriMiddlewareLayer;
+pub mod auth;
+pub mod etag;
+pub mod template;
 
-mod auth;
-mod etag;
-mod template;
+pub trait MarvelService: Service<
+    Request<Body>,
+    Response = DataWrapper,
+    Error = hyper::Error,
+    Future = BoxFuture<'static, Result<DataWrapper, hyper::Error>>
+> + Send + Sync + Clone {}
 
-type HyperService = BoxCloneService<Request<Body>, DataWrapper, hyper::Error>;
+impl<S> MarvelService for S
+where
+S: Service<
+    Request<Body>,
+    Response = DataWrapper,
+    Error = hyper::Error,
+    Future = BoxFuture<'static, Result<DataWrapper, hyper::Error>>
+> + Send + Sync + Clone
+{}
 
-pub struct Marvel {
-    svc: Mutex<HyperService>,
+pub struct Marvel<S>
+{
+    svc: S
 }
 
-impl Marvel {
-    pub fn new(client: &Client<HttpsConnector<HttpConnector>, Body>) -> Self {
-        let svc = Marvel::svc(client);
-        let svc = Mutex::new(svc);
+impl<S> Marvel<S> {
+    pub fn new(svc: S) -> Self {
         Marvel { svc }
     }
+}
 
-    fn svc(client: &Client<HttpsConnector<HttpConnector>, Body>) -> HyperService {
-        let svc = ServiceBuilder::new()
-            .layer(EtagMiddlewareLayer::new(new_etag_cache()))
-            .layer(UriMiddlewareLayer::new("gateway.marvel.com", "https"))
-            .layer(AuthMiddlewareLayer::new(
-                include_str!("../../pub.txt"), // todo: formalize, this is janky
-                include_str!("../../priv.txt"),
-            ))
-            .service(client.clone());
-
-        BoxCloneService::new(svc)
-    }
+impl<S> Marvel<S>
+where
+    S: MarvelService
+{
 
     pub async fn weekly_comics(&self) -> DataWrapper {
         let (date, date2) = self.week_range(Utc::now());
@@ -51,8 +50,7 @@ impl Marvel {
         let uri = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={},{}&hasDigitalIssue=true&orderBy=issueNumber&limit=100", date, date2);
         let req = Request::get(uri).body(Body::empty()).unwrap();
 
-        // todo - anyway to avoid the lock here whilst still keeping the Marvel struct shared?
-        let mut svc = { self.svc.lock().await.clone() };
+        let mut svc = self.svc.clone();
         svc.call(req).await.unwrap()
     }
 

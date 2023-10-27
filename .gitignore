@@ -4,5 +4,6 @@ db.json
 *.txt
 .idea/
 .vscode/
+*.iml
 
 target/
