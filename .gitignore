@@ -2,7 +2,10 @@ bin/
 results.json
 db.json
 *.txt
+
 .idea/
+*.iml
+
 .vscode/
 
 target/

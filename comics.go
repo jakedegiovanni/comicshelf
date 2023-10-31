@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/jakedegiovanni/comicshelf/static"
@@ -37,14 +36,14 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	t, err := time.Parse("2006-01-02", r.URL.Query().Get("date"))
 	if err != nil {
-		c.logger.Error("parse", slog.String("err", err.Error()))
-		os.Exit(1) // todo - shouldn't be doing this
+		c.logger.Error(err.Error())
+		return
 	}
 
 	resp, err := c.client.GetWeeklyComics(t)
 	if err != nil {
 		c.logger.Error("getting series collection", slog.String("err", err.Error()))
-		os.Exit(1) // todo shouldn't bee doing this
+		return
 	}
 
 	content := static.Content{
@@ -55,7 +54,6 @@ func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = c.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
-		c.logger.Error("exec", slog.String("err", err.Error()))
-		os.Exit(1) // todo - shouldn't be doing this
+		c.logger.Error(err.Error())
 	}
 }

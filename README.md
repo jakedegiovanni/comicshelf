@@ -33,3 +33,5 @@
 - makefile supports build for different platforms
 - deploy to aws
 - support more than just marvel unlimited
+- error page
+- reload static & template files

@@ -16,14 +16,14 @@ type CtxKey struct {
 }
 
 type AppConfig struct {
-	File    string
-	Logging LoggingConfig
-	Server  ServerConfig
+	File    string        `mapstructure:"file"`
+	Logging LoggingConfig `mapstructure:"logging"`
+	Server  ServerConfig  `mapstructure:"server"`
 }
 
 type LoggingConfig struct {
-	Level    string
-	Disabled bool
+	Level    string `mapstructure:"level"`
+	Disabled bool   `mapstructure:"disabled"`
 }
 
 func (l LoggingConfig) SlogLevel() (slog.Level, error) {
