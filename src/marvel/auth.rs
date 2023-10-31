@@ -59,12 +59,6 @@ where
         let path = pq.path();
         let q = pq.query().unwrap_or("");
 
-        let path = if !path.contains("/v1/public") {
-            format!("/v1/public{}", path)
-        } else {
-            path.to_string()
-        };
-
         let ts = Utc::now().timestamp_millis();
         let hash = format!(
             "{:x}",
