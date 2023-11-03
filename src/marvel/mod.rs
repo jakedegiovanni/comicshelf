@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use chrono::{Datelike, DateTime, Days, Months, Utc, Weekday};
 use hyper::{Body, Request};
-use tower::Service;
+use tower::{BoxError, Service};
 
 use self::template::DataWrapper;
 
@@ -12,7 +12,7 @@ pub mod template;
 pub trait MarvelService: Service<
     Request<Body>,
     Response = DataWrapper,
-    Error = anyhow::Error,
+    Error = BoxError,
 > + Send + Sync + Clone {}
 
 impl<S> MarvelService for S
@@ -20,7 +20,7 @@ where
 S: Service<
     Request<Body>,
     Response = DataWrapper,
-    Error = anyhow::Error,
+    Error = BoxError,
 > + Send + Sync + Clone
 {}
 
@@ -40,7 +40,7 @@ where
     S: MarvelService
 {
 
-    pub async fn weekly_comics(&self, date: DateTime<Utc>) -> anyhow::Result<DataWrapper> {
+    pub async fn weekly_comics(&self, date: DateTime<Utc>) -> Result<DataWrapper, BoxError> {
         let (date, date2) = self.week_range(date).ok_or(anyhow!("bad date"))?;
         let date = self.fmt_date(&date);
         let date2 = self.fmt_date(&date2);

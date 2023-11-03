@@ -8,7 +8,7 @@ use hyper_tls::HttpsConnector;
 use serde_json::Value;
 use tera::{Context, Tera};
 use thiserror::Error;
-use tower::ServiceBuilder;
+use tower::{BoxError, ServiceBuilder};
 use tower_http::services::ServeDir;
 
 use crate::marvel::{Marvel, MarvelService};
@@ -24,7 +24,9 @@ pub enum AppError {
     #[error("internal error")]
     Anyhow(#[from] anyhow::Error),
     #[error("rendering error")]
-    Tera(#[from] tera::Error)
+    Tera(#[from] tera::Error),
+    #[error("box error")]
+    Box(#[from] BoxError)
 }
 
 impl IntoResponse for AppError {

@@ -1,6 +1,9 @@
-use hyper::{Body, http, Request};
 use std::task::{Context, Poll};
-use tower::{Layer, Service};
+
+use hyper::{Body, http, Request};
+use tower::{BoxError, Layer, Service};
+
+use crate::middleware::MiddlewareFuture;
 
 pub struct UriMiddlewareLayer {
     host: &'static str,
@@ -43,13 +46,14 @@ impl<S> UriMiddleware<S> {
 impl<S> Service<Request<Body>> for UriMiddleware<S>
 where
     S: Service<Request<Body>>,
+    S::Error: Into<BoxError>,
 {
     type Response = S::Response;
-    type Error = S::Error;
-    type Future = S::Future;
+    type Error = BoxError;
+    type Future = MiddlewareFuture<S::Future>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
+        self.inner.poll_ready(cx).map_err(Into::into)
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
@@ -78,6 +82,6 @@ where
 
         p.uri = hyper::Uri::from_parts(up).unwrap();
 
-        self.inner.call(Request::from_parts(p, b))
+        MiddlewareFuture::new(self.inner.call(Request::from_parts(p, b)))
     }
 }
