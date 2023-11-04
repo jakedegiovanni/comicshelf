@@ -45,10 +45,10 @@ impl<S> EtagCacheMiddleware<S> {
     }
 }
 
-// todo really want this to follow the S::Error: Into<BoxError> with no Error constraint on the Service trait itself
 impl<S> Service<Request<Body>> for EtagCacheMiddleware<S>
 where
-    S: Service<Request<Body>, Response = Response<Body>, Error = BoxError> + Clone + Send + 'static,
+    S: Service<Request<Body>, Response = Response<Body>> + Clone + Send + 'static,
+    S::Error: Into<BoxError>,
     S::Future: Send,
 {
     type Response = DataWrapper;
@@ -56,7 +56,7 @@ where
     type Future = BoxFuture<'static, Result<DataWrapper, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
+        self.inner.poll_ready(cx).map_err(Into::into)
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
@@ -100,7 +100,7 @@ where
 
             let key = key.to_string();
 
-            let response = this.call(req).await?;
+            let response = this.call(req).await.map_err(Into::into)?;
             if response.status() == StatusCode::NOT_MODIFIED {
                 println!("using cache");
                 Ok(cache
