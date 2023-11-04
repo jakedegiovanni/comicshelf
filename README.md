@@ -33,3 +33,4 @@
 - makefile supports build for different platforms
 - deploy to aws
 - support more than just marvel unlimited
+- Middleware should have custom futures to try and reduce and cloning and split box pins into methods
