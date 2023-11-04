@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use chrono::{Datelike, DateTime, Days, Months, Utc, Weekday};
+use chrono::{DateTime, Datelike, Days, Months, Utc, Weekday};
 use hyper::{Body, Request};
 use tower::{BoxError, Service};
 
@@ -9,24 +9,18 @@ pub mod auth;
 pub mod etag;
 pub mod template;
 
-pub trait MarvelService: Service<
-    Request<Body>,
-    Response = DataWrapper,
-    Error = BoxError,
-> + Send + Sync + Clone {}
-
-impl<S> MarvelService for S
-where
-S: Service<
-    Request<Body>,
-    Response = DataWrapper,
-    Error = BoxError,
-> + Send + Sync + Clone
-{}
-
-pub struct Marvel<S>
+pub trait MarvelService:
+    Service<Request<Body>, Response = DataWrapper, Error = BoxError> + Send + Sync + Clone
 {
-    svc: S
+}
+
+impl<S> MarvelService for S where
+    S: Service<Request<Body>, Response = DataWrapper, Error = BoxError> + Send + Sync + Clone
+{
+}
+
+pub struct Marvel<S> {
+    svc: S,
 }
 
 impl<S> Marvel<S> {
@@ -37,9 +31,8 @@ impl<S> Marvel<S> {
 
 impl<S> Marvel<S>
 where
-    S: MarvelService
+    S: MarvelService,
 {
-
     pub async fn weekly_comics(&self, date: DateTime<Utc>) -> Result<DataWrapper, BoxError> {
         let (date, date2) = self.week_range(date).ok_or(anyhow!("bad date"))?;
         let date = self.fmt_date(&date);

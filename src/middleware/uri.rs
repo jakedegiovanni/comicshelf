@@ -1,19 +1,22 @@
 use std::task::{Context, Poll};
 
-use hyper::{Body, http, Request};
+use futures_util::future::BoxFuture;
+use hyper::{http, Body, Request};
 use tower::{BoxError, Layer, Service};
-
-use crate::middleware::MiddlewareFuture;
 
 pub struct UriMiddlewareLayer {
     host: &'static str,
     scheme: http::uri::Scheme,
-    path_prefix: &'static str
+    path_prefix: &'static str,
 }
 
 impl UriMiddlewareLayer {
     pub fn new(host: &'static str, scheme: http::uri::Scheme, path_prefix: &'static str) -> Self {
-        UriMiddlewareLayer { host, scheme, path_prefix }
+        UriMiddlewareLayer {
+            host,
+            scheme,
+            path_prefix,
+        }
     }
 }
 
@@ -33,7 +36,12 @@ pub struct UriMiddleware<S> {
 }
 
 impl<S> UriMiddleware<S> {
-    fn new(inner: S, host: &'static str, scheme: http::uri::Scheme, path_prefix: &'static str) -> Self {
+    fn new(
+        inner: S,
+        host: &'static str,
+        scheme: http::uri::Scheme,
+        path_prefix: &'static str,
+    ) -> Self {
         UriMiddleware {
             inner,
             host,
@@ -45,43 +53,55 @@ impl<S> UriMiddleware<S> {
 
 impl<S> Service<Request<Body>> for UriMiddleware<S>
 where
-    S: Service<Request<Body>>,
+    S: Service<Request<Body>> + Clone + Send + 'static,
     S::Error: Into<BoxError>,
+    S::Future: Send,
 {
     type Response = S::Response;
     type Error = BoxError;
-    type Future = MiddlewareFuture<S::Future>;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let (mut p, b) = req.into_parts();
+        let this = self.inner.clone();
+        let mut this = std::mem::replace(&mut self.inner, this);
 
-        let mut up = p.uri.clone().into_parts();
-        up.authority = Some(http::uri::Authority::from_static(self.host));
-        up.scheme = Some(self.scheme.clone());
+        let req = req;
+        let scheme = self.scheme.clone();
+        let host = self.host;
+        let path_prefix = self.path_prefix;
 
-        let pq = p.uri.into_parts().path_and_query.unwrap_or(
-            http::uri::PathAndQuery::from_static("")
-        );
-        let path = pq.path();
-        let q = pq.query().map_or(
-            "".to_string(),
-            |q| format!("?{}", q)
-        );
+        Box::pin(async move {
+            let (mut p, b) = req.into_parts();
 
-        let path = if !path.contains(self.path_prefix) {
-            format!("{}{}", self.path_prefix, path)
-        } else {
-            path.to_string()
-        };
+            let mut up = p.uri.clone().into_parts();
+            up.authority = Some(http::uri::Authority::from_static(host));
+            up.scheme = Some(scheme);
 
-        up.path_and_query = Some(http::uri::PathAndQuery::try_from(format!("{}{}", path, q)).unwrap());
+            let pq = p
+                .uri
+                .into_parts()
+                .path_and_query
+                .unwrap_or(http::uri::PathAndQuery::from_static(""));
+            let path = pq.path();
+            let q = pq.query().map_or("".to_string(), |q| format!("?{}", q));
 
-        p.uri = hyper::Uri::from_parts(up).unwrap();
+            let path = if !path.contains(path_prefix) {
+                format!("{}{}", path_prefix, path)
+            } else {
+                path.to_string()
+            };
 
-        MiddlewareFuture::new(self.inner.call(Request::from_parts(p, b)))
+            up.path_and_query = Some(http::uri::PathAndQuery::try_from(format!("{}{}", path, q))?);
+
+            p.uri = hyper::Uri::from_parts(up)?;
+
+            this.call(Request::from_parts(p, b))
+                .await
+                .map_err(Into::into)
+        })
     }
 }

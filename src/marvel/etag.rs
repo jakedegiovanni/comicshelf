@@ -67,7 +67,9 @@ where
         let cache = self.cache.clone();
 
         Box::pin(async move {
-            let key = req.uri().path_and_query()
+            let key = req
+                .uri()
+                .path_and_query()
                 .ok_or(anyhow!("no path or query"))?
                 .clone();
             let mut headers = req.headers().clone();
@@ -75,7 +77,11 @@ where
             let (mut p, b) = req.into_parts();
 
             // todo how to properly handle poisoned locks?
-            match cache.read().expect("could not read from the cache").get(key.as_str()) {
+            match cache
+                .read()
+                .expect("could not read from the cache")
+                .get(key.as_str())
+            {
                 Some(wrapper) => {
                     println!(
                         "key {:?} exists in cache, using etag {:?}",
@@ -97,9 +103,13 @@ where
             let response = this.call(req).await?;
             if response.status() == StatusCode::NOT_MODIFIED {
                 println!("using cache");
-                Ok(cache.read().expect("could not read from the cache")
+                Ok(cache
+                    .read()
+                    .expect("could not read from the cache")
                     .get(key.as_str())
-                    .ok_or(anyhow!("an item expected to be in the cache could not be found"))?
+                    .ok_or(anyhow!(
+                        "an item expected to be in the cache could not be found"
+                    ))?
                     .clone())
             } else {
                 let result: DataWrapper = serde_json::from_slice(
@@ -109,7 +119,10 @@ where
                         .as_slice(),
                 )?;
                 println!("storing cache");
-                cache.write().expect("could not write to the cache").insert(key, result.clone());
+                cache
+                    .write()
+                    .expect("could not write to the cache")
+                    .insert(key, result.clone());
                 Ok(result)
             }
         })

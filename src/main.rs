@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use axum::response::{IntoResponse, Response};
+use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use chrono::Utc;
 use hyper_tls::HttpsConnector;
 use serde_json::Value;
@@ -11,9 +11,9 @@ use thiserror::Error;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::services::ServeDir;
 
-use crate::marvel::{Marvel, MarvelService};
 use crate::marvel::auth::AuthMiddlewareLayer;
-use crate::marvel::etag::{EtagMiddlewareLayer, new_etag_cache};
+use crate::marvel::etag::{new_etag_cache, EtagMiddlewareLayer};
+use crate::marvel::{Marvel, MarvelService};
 use crate::middleware::uri::UriMiddlewareLayer;
 
 mod marvel;
@@ -26,15 +26,16 @@ pub enum AppError {
     #[error("rendering error")]
     Tera(#[from] tera::Error),
     #[error("box error")]
-    Box(#[from] BoxError)
+    Box(#[from] BoxError),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("something went wrong: {}", self)
-        ).into_response()
+            format!("something went wrong: {}", self),
+        )
+            .into_response()
     }
 }
 
@@ -56,7 +57,7 @@ async fn marvel_unlimited_comics<S>(
     State(state): State<Arc<ComicShelf<S>>>,
 ) -> Result<Html<String>, AppError>
 where
-    S: MarvelService
+    S: MarvelService,
 {
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
@@ -87,7 +88,7 @@ async fn main() {
         .layer(UriMiddlewareLayer::new(
             "gateway.marvel.com",
             hyper::http::uri::Scheme::HTTPS,
-            "/v1/public"
+            "/v1/public",
         ))
         .layer(AuthMiddlewareLayer::new(
             include_str!("../pub.txt"), // todo: formalize, this is janky

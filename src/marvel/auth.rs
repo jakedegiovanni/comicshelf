@@ -1,10 +1,10 @@
 use std::task::{Context, Poll};
 
+use axum::http::uri::PathAndQuery;
 use chrono::Utc;
+use futures_util::future::BoxFuture;
 use hyper::{Body, Request};
 use tower::{BoxError, Layer, Service};
-
-use crate::middleware::MiddlewareFuture;
 
 pub struct AuthMiddlewareLayer {
     pub_key: &'static str,
@@ -44,40 +44,53 @@ impl<S> AuthMiddleware<S> {
 
 impl<S> Service<Request<Body>> for AuthMiddleware<S>
 where
-    S: Service<Request<Body>>,
-    S::Error: Into<BoxError>
+    S: Service<Request<Body>> + Clone + Send + 'static,
+    S::Error: Into<BoxError>,
+    S::Future: Send,
 {
     type Response = S::Response;
     type Error = BoxError;
-    type Future = MiddlewareFuture<S::Future>;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Into::into)
     }
 
     fn call(&mut self, req: Request<Body>) -> Self::Future {
-        let (mut p, b) = req.into_parts();
+        let this = self.inner.clone();
+        let mut this = std::mem::replace(&mut self.inner, this);
 
-        let mut up = p.uri.into_parts();
-        let pq = up.path_and_query.unwrap();
-        let path = pq.path();
-        let q = pq.query().unwrap_or("");
+        let req = req;
+        let priv_key = self.priv_key;
+        let pub_key = self.pub_key;
 
-        let ts = Utc::now().timestamp_millis();
-        let hash = format!(
-            "{:x}",
-            md5::compute(format!("{}{}{}", ts, self.priv_key, self.pub_key))
-        );
-        let query = format!("apikey={}&ts={}&hash={}", self.pub_key, ts, hash);
-        let query = if q.is_empty() {
-            format!("?{}", query)
-        } else {
-            format!("{}&{}", q, query)
-        };
-        let query = format!("{}?{}", path, query);
-        up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query).unwrap());
+        Box::pin(async move {
+            let (mut p, b) = req.into_parts();
 
-        p.uri = hyper::Uri::from_parts(up).unwrap();
-        MiddlewareFuture::new(self.inner.call(Request::from_parts(p, b)))
+            let mut up = p.uri.into_parts();
+            let pq = up.path_and_query.unwrap_or(PathAndQuery::from_static("")); // todo test creating empty path and query to understand behaviour
+            let path = pq.path();
+            let q = pq.query().unwrap_or("");
+
+            let ts = Utc::now().timestamp_millis();
+            let hash = format!(
+                "{:x}",
+                md5::compute(format!("{}{}{}", ts, priv_key, pub_key))
+            );
+            let query = format!("apikey={}&ts={}&hash={}", pub_key, ts, hash);
+            let query = if q.is_empty() {
+                format!("?{}", query)
+            } else {
+                format!("{}&{}", q, query)
+            };
+            let query = format!("{}?{}", path, query);
+            up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query)?);
+
+            p.uri = hyper::Uri::from_parts(up)?;
+
+            this.call(Request::from_parts(p, b))
+                .await
+                .map_err(Into::into)
+        })
     }
 }
