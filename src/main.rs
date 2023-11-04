@@ -1,3 +1,13 @@
+#![warn(
+    clippy::all,
+    clippy::correctness,
+    clippy::suspicious,
+    clippy::style,
+    clippy::complexity,
+    clippy::perf,
+    clippy::pedantic
+)]
+
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -11,10 +21,8 @@ use thiserror::Error;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::services::ServeDir;
 
-use crate::marvel::auth::AuthMiddlewareLayer;
-use crate::marvel::etag::{new_etag_cache, EtagMiddlewareLayer};
-use crate::marvel::{Marvel, MarvelService};
-use crate::middleware::uri::UriMiddlewareLayer;
+use crate::marvel::{auth, etag, Marvel};
+use crate::middleware::uri;
 
 mod marvel;
 mod middleware;
@@ -33,7 +41,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("something went wrong: {}", self),
+            format!("something went wrong: {self}"),
         )
             .into_response()
     }
@@ -57,7 +65,7 @@ async fn marvel_unlimited_comics<S>(
     State(state): State<Arc<ComicShelf<S>>>,
 ) -> Result<Html<String>, AppError>
 where
-    S: MarvelService,
+    S: marvel::Client,
 {
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
@@ -84,13 +92,13 @@ async fn main() {
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
     let svc = ServiceBuilder::new()
-        .layer(EtagMiddlewareLayer::new(new_etag_cache()))
-        .layer(UriMiddlewareLayer::new(
+        .layer(etag::CacheMiddlewareLayer::new(etag::new_etag_cache()))
+        .layer(uri::MiddlewareLayer::new(
             "gateway.marvel.com",
             hyper::http::uri::Scheme::HTTPS,
             "/v1/public",
         ))
-        .layer(AuthMiddlewareLayer::new(
+        .layer(auth::MiddlewareLayer::new(
             include_str!("../pub.txt"), // todo: formalize, this is janky
             include_str!("../priv.txt"),
         ))

@@ -4,15 +4,15 @@ use futures_util::future::BoxFuture;
 use hyper::{http, Body, Request};
 use tower::{BoxError, Layer, Service};
 
-pub struct UriMiddlewareLayer {
+pub struct MiddlewareLayer {
     host: &'static str,
     scheme: http::uri::Scheme,
     path_prefix: &'static str,
 }
 
-impl UriMiddlewareLayer {
+impl MiddlewareLayer {
     pub fn new(host: &'static str, scheme: http::uri::Scheme, path_prefix: &'static str) -> Self {
-        UriMiddlewareLayer {
+        MiddlewareLayer {
             host,
             scheme,
             path_prefix,
@@ -20,29 +20,29 @@ impl UriMiddlewareLayer {
     }
 }
 
-impl<S> Layer<S> for UriMiddlewareLayer {
-    type Service = UriMiddleware<S>;
+impl<S> Layer<S> for MiddlewareLayer {
+    type Service = Middleware<S>;
     fn layer(&self, inner: S) -> Self::Service {
-        UriMiddleware::new(inner, self.host, self.scheme.clone(), self.path_prefix)
+        Middleware::new(inner, self.host, self.scheme.clone(), self.path_prefix)
     }
 }
 
 #[derive(Clone)]
-pub struct UriMiddleware<S> {
+pub struct Middleware<S> {
     inner: S,
     host: &'static str,
     scheme: http::uri::Scheme,
     path_prefix: &'static str,
 }
 
-impl<S> UriMiddleware<S> {
+impl<S> Middleware<S> {
     fn new(
         inner: S,
         host: &'static str,
         scheme: http::uri::Scheme,
         path_prefix: &'static str,
     ) -> Self {
-        UriMiddleware {
+        Middleware {
             inner,
             host,
             scheme,
@@ -51,7 +51,7 @@ impl<S> UriMiddleware<S> {
     }
 }
 
-impl<S> Service<Request<Body>> for UriMiddleware<S>
+impl<S> Service<Request<Body>> for Middleware<S>
 where
     S: Service<Request<Body>> + Clone + Send + 'static,
     S::Error: Into<BoxError>,
@@ -87,15 +87,15 @@ where
                 .path_and_query
                 .unwrap_or(http::uri::PathAndQuery::from_static(""));
             let path = pq.path();
-            let q = pq.query().map_or("".to_string(), |q| format!("?{}", q));
+            let q = pq.query().map_or(String::new(), |q| format!("?{q}"));
 
-            let path = if !path.contains(path_prefix) {
-                format!("{}{}", path_prefix, path)
-            } else {
+            let path = if path.contains(path_prefix) {
                 path.to_string()
+            } else {
+                format!("{path_prefix}{path}")
             };
 
-            up.path_and_query = Some(http::uri::PathAndQuery::try_from(format!("{}{}", path, q))?);
+            up.path_and_query = Some(http::uri::PathAndQuery::try_from(format!("{path}{q}"))?);
 
             p.uri = hyper::Uri::from_parts(up)?;
 

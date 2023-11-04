@@ -6,35 +6,35 @@ use futures_util::future::BoxFuture;
 use hyper::{Body, Request};
 use tower::{BoxError, Layer, Service};
 
-pub struct AuthMiddlewareLayer {
+pub struct MiddlewareLayer {
     pub_key: &'static str,
     priv_key: &'static str,
 }
 
-impl AuthMiddlewareLayer {
+impl MiddlewareLayer {
     pub fn new(pub_key: &'static str, priv_key: &'static str) -> Self {
-        AuthMiddlewareLayer { pub_key, priv_key }
+        MiddlewareLayer { pub_key, priv_key }
     }
 }
 
-impl<S> Layer<S> for AuthMiddlewareLayer {
-    type Service = AuthMiddleware<S>;
+impl<S> Layer<S> for MiddlewareLayer {
+    type Service = Middleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        AuthMiddleware::new(inner, self.pub_key, self.priv_key)
+        Middleware::new(inner, self.pub_key, self.priv_key)
     }
 }
 
 #[derive(Clone)]
-pub struct AuthMiddleware<S> {
+pub struct Middleware<S> {
     inner: S,
     pub_key: &'static str,
     priv_key: &'static str,
 }
 
-impl<S> AuthMiddleware<S> {
+impl<S> Middleware<S> {
     fn new(inner: S, pub_key: &'static str, priv_key: &'static str) -> Self {
-        AuthMiddleware {
+        Middleware {
             inner,
             pub_key,
             priv_key,
@@ -42,7 +42,7 @@ impl<S> AuthMiddleware<S> {
     }
 }
 
-impl<S> Service<Request<Body>> for AuthMiddleware<S>
+impl<S> Service<Request<Body>> for Middleware<S>
 where
     S: Service<Request<Body>> + Clone + Send + 'static,
     S::Error: Into<BoxError>,
@@ -73,17 +73,14 @@ where
             let q = pq.query().unwrap_or("");
 
             let ts = Utc::now().timestamp_millis();
-            let hash = format!(
-                "{:x}",
-                md5::compute(format!("{}{}{}", ts, priv_key, pub_key))
-            );
-            let query = format!("apikey={}&ts={}&hash={}", pub_key, ts, hash);
+            let hash = format!("{:x}", md5::compute(format!("{ts}{priv_key}{pub_key}")));
+            let query = format!("apikey={pub_key}&ts={ts}&hash={hash}");
             let query = if q.is_empty() {
-                format!("?{}", query)
+                format!("?{query}")
             } else {
-                format!("{}&{}", q, query)
+                format!("{q}&{query}")
             };
-            let query = format!("{}?{}", path, query);
+            let query = format!("{path}?{query}");
             up.path_and_query = Some(hyper::http::uri::PathAndQuery::try_from(query)?);
 
             p.uri = hyper::Uri::from_parts(up)?;

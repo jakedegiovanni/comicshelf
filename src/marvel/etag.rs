@@ -9,43 +9,43 @@ use tower::{BoxError, Layer, Service};
 
 use super::template::DataWrapper;
 
-pub type EtagCache = Arc<RwLock<HashMap<String, DataWrapper>>>;
+pub type Cache = Arc<RwLock<HashMap<String, DataWrapper>>>;
 
-pub fn new_etag_cache() -> EtagCache {
+pub fn new_etag_cache() -> Cache {
     Arc::new(RwLock::new(HashMap::new()))
 }
 
-pub struct EtagMiddlewareLayer {
-    cache: EtagCache,
+pub struct CacheMiddlewareLayer {
+    cache: Cache,
 }
 
-impl EtagMiddlewareLayer {
-    pub fn new(cache: EtagCache) -> Self {
-        EtagMiddlewareLayer { cache }
+impl CacheMiddlewareLayer {
+    pub fn new(cache: Cache) -> Self {
+        CacheMiddlewareLayer { cache }
     }
 }
 
-impl<S> Layer<S> for EtagMiddlewareLayer {
-    type Service = EtagCacheMiddleware<S>;
+impl<S> Layer<S> for CacheMiddlewareLayer {
+    type Service = CacheMiddleware<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        EtagCacheMiddleware::new(inner, self.cache.clone())
+        CacheMiddleware::new(inner, self.cache.clone())
     }
 }
 
 #[derive(Clone)]
-pub struct EtagCacheMiddleware<S> {
+pub struct CacheMiddleware<S> {
     inner: S,
-    cache: EtagCache,
+    cache: Cache,
 }
 
-impl<S> EtagCacheMiddleware<S> {
-    fn new(inner: S, cache: EtagCache) -> Self {
-        EtagCacheMiddleware { inner, cache }
+impl<S> CacheMiddleware<S> {
+    fn new(inner: S, cache: Cache) -> Self {
+        CacheMiddleware { inner, cache }
     }
 }
 
-impl<S> Service<Request<Body>> for EtagCacheMiddleware<S>
+impl<S> Service<Request<Body>> for CacheMiddleware<S>
 where
     S: Service<Request<Body>, Response = Response<Body>> + Clone + Send + 'static,
     S::Error: Into<BoxError>,
@@ -91,7 +91,7 @@ where
                     headers.insert("If-None-Match", wrapper.etag.parse()?);
                 }
                 None => {
-                    println!("key {:?} does not exist in cache", key);
+                    println!("key {key:?} does not exist in cache");
                 }
             }
 
