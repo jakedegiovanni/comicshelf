@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"os"
 
 	"github.com/jakedegiovanni/comicshelf/static"
 )
@@ -33,8 +32,8 @@ func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := s.client.GetComicsWithinSeries(r.URL.Query().Get("series"))
 	if err != nil {
-		s.logger.Error("series", slog.String("err", err.Error()))
-		os.Exit(1) // todo - shouldn't be doing this
+		s.logger.Error(err.Error())
+		return
 	}
 
 	content := static.Content{
@@ -45,7 +44,7 @@ func (s *Series) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = s.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
-		s.logger.Error("exec", slog.String("err", err.Error()))
-		os.Exit(1) // todo - shouldn't be doing this
+		s.logger.Error(err.Error())
+		return
 	}
 }

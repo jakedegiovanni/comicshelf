@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -9,12 +12,14 @@ import (
 	"runtime/debug"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jakedegiovanni/comicshelf/static"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 )
 
 func Server(cfg *AppConfig, v *viper.Viper) *cobra.Command {
@@ -76,25 +81,46 @@ func Server(cfg *AppConfig, v *viper.Viper) *cobra.Command {
 				Addr:    cfg.Server.Address,
 			}
 
-			go func() {
+			g := new(errgroup.Group)
+
+			g.Go(func() error {
+				c := make(chan os.Signal, 1)
+				signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+				select {
+				case <-cmd.Context().Done():
+					logger.Info("context shutdown")
+				case <-c:
+					logger.Info("programmatic shutdown")
+				}
+
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+
+				return srv.Shutdown(ctx)
+			})
+
+			g.Go(func() error {
 				err = srv.ListenAndServe()
 				if err != nil {
+					if errors.Is(err, http.ErrServerClosed) {
+						return nil
+					}
+
 					logger.Error(err.Error())
-					os.Exit(1)
+					return fmt.Errorf("error starting server: %w", err)
 				}
-			}()
+				return nil
+			})
 
 			logger.Info("server ready to accept connections", slog.String("addr", cfg.Server.Address))
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-			<-c
-			return nil
+			return g.Wait()
 		},
 	}
 
 	cmd.PersistentFlags().StringVarP(&cfg.Server.Address, "address", "a", cfg.Server.Address, "")
-	v.BindPFlag("server.address", cmd.PersistentFlags().Lookup("address"))
+	_ = v.BindPFlag("server.address", cmd.PersistentFlags().Lookup("address"))
 
 	return cmd
 }

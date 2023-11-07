@@ -36,3 +36,5 @@
 - Middleware should have custom futures to try and reduce and cloning and split box pins into methods
 - config driven
 - cli to launch server vs adhoc requests
+- error page
+- reload static & template files
