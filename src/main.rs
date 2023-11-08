@@ -11,9 +11,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use anyhow::anyhow;
+use axum::extract::{OriginalUri, Query};
 use axum::response::{IntoResponse, Response};
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
-use chrono::Utc;
+use chrono::{NaiveDate, ParseError, Utc};
 use hyper_tls::HttpsConnector;
 use serde_json::Value;
 use tera::{Context, Tera};
@@ -35,6 +37,10 @@ pub enum AppError {
     Tera(#[from] tera::Error),
     #[error("box error")]
     Box(#[from] BoxError),
+    #[error("hyper error")]
+    HyperError(#[from] hyper::http::Error),
+    #[error("parse error")]
+    ParseError(#[from] ParseError),
 }
 
 impl IntoResponse for AppError {
@@ -63,17 +69,24 @@ impl<S> ComicShelf<S> {
 
 async fn marvel_unlimited_comics<S>(
     State(state): State<Arc<ComicShelf<S>>>,
+    Query(query): Query<HashMap<String, String>>,
+    OriginalUri(original_uri): OriginalUri,
 ) -> Result<Html<String>, AppError>
 where
     S: marvel::Client,
 {
     let mut ctx = Context::new();
-    ctx.insert("PageEndpoint", "/marvel-unlimited/comics");
+    ctx.insert("PageEndpoint", original_uri.path());
 
-    let date = Utc::now();
-    ctx.insert("Date", &date.format("%Y-%m-%d").to_string());
+    let date = query
+        .get("date")
+        .ok_or(anyhow!("must supply a date parameter"))?;
+    ctx.insert("Date", date);
 
-    let result = state.marvel_client.weekly_comics(date).await?;
+    let result = state
+        .marvel_client
+        .weekly_comics(date.parse::<NaiveDate>()?)
+        .await?;
     ctx.insert("results", &result);
 
     Ok(Html(state.tera.render("marvel-unlimited.html", &ctx)?))
@@ -82,6 +95,37 @@ where
 fn following(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let _ = args.get("index").ok_or(tera::Error::msg("not found"))?; // todo use for db check
     Ok(tera::to_value(false)?)
+}
+
+async fn enforce_date_query<B>(
+    req: axum::http::Request<B>,
+    next: axum::middleware::Next<B>,
+) -> Result<axum::response::Response, AppError> {
+    let q = req.uri().query();
+    if q.is_none() || !q.unwrap().contains("date") {
+        let (p, _) = req.into_parts();
+        let original_uri = p.extensions.get::<OriginalUri>().unwrap().path();
+
+        let p = p.uri.into_parts();
+        let pq = p
+            .path_and_query
+            .unwrap_or(hyper::http::uri::PathAndQuery::from_static("/"));
+        let query = pq.query().unwrap_or("");
+
+        let date = Utc::now().date_naive().to_string();
+        let query = if query.is_empty() {
+            format!("date={date}")
+        } else {
+            format!("{query}&date={date}")
+        };
+
+        return Ok(
+            axum::response::Redirect::temporary(format!("{original_uri}?{query}").as_str())
+                .into_response(),
+        );
+    }
+
+    Ok(next.run(req).await)
 }
 
 #[tokio::main]
@@ -108,7 +152,12 @@ async fn main() {
     let state = Arc::new(ComicShelf::new(tera, marvel_client));
 
     let app = axum::Router::new()
-        .route("/marvel-unlimited/comics", get(marvel_unlimited_comics))
+        .nest(
+            "/marvel-unlimited",
+            axum::Router::new()
+                .route("/comics", get(marvel_unlimited_comics))
+                .layer(ServiceBuilder::new().layer(axum::middleware::from_fn(enforce_date_query))),
+        )
         .nest_service("/static", ServeDir::new("static"))
         .with_state(state);
 
