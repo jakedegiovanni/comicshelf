@@ -1,6 +1,10 @@
 use chrono::{Datelike, Days, Months, NaiveDate, Weekday};
-use hyper::{Body, Request};
-use tower::{BoxError, Service};
+use futures_util::future::BoxFuture;
+use hyper::{client::HttpConnector, Body, Request};
+use hyper_tls::HttpsConnector;
+use tower::{BoxError, Service, ServiceBuilder};
+
+use crate::middleware::uri;
 
 use self::template::DataWrapper;
 
@@ -8,14 +12,49 @@ pub mod auth;
 pub mod etag;
 pub mod template;
 
-pub trait Client:
-    Service<Request<Body>, Response = DataWrapper, Error = BoxError> + Send + Sync + Clone
+pub trait WebClient:
+    Service<
+        Request<Body>,
+        Response = DataWrapper,
+        Error = BoxError,
+        Future = BoxFuture<'static, Result<DataWrapper, BoxError>>,
+    > + Send
+    + Sync
+    + Clone
 {
 }
 
-impl<S> Client for S where
-    S: Service<Request<Body>, Response = DataWrapper, Error = BoxError> + Send + Sync + Clone
+impl<S> WebClient for S where
+    S: Service<
+            Request<Body>,
+            Response = DataWrapper,
+            Error = BoxError,
+            Future = BoxFuture<'static, Result<DataWrapper, BoxError>>,
+        > + Send
+        + Sync
+        + Clone
 {
+}
+
+fn new_web_client(client: &hyper::Client<HttpsConnector<HttpConnector>>) -> impl WebClient {
+    ServiceBuilder::new()
+        .layer(etag::CacheMiddlewareLayer::new(etag::new_etag_cache()))
+        .layer(uri::MiddlewareLayer::new(
+            "gateway.marvel.com",
+            hyper::http::uri::Scheme::HTTPS,
+            "/v1/public",
+        ))
+        .layer(auth::MiddlewareLayer::new(
+            include_str!("../../pub.txt"), // todo: formalize, this is janky
+            include_str!("../../priv.txt"),
+        ))
+        .service(client.clone())
+}
+
+pub fn new_marvel_service(
+    client: &hyper::Client<HttpsConnector<HttpConnector>>,
+) -> Marvel<impl WebClient> {
+    Marvel::new(new_web_client(client))
 }
 
 pub struct Marvel<S> {
@@ -45,7 +84,7 @@ impl<S> Marvel<S> {
 
 impl<S> Marvel<S>
 where
-    S: Client,
+    S: WebClient,
 {
     pub async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper, BoxError> {
         let (date, date2) = Marvel::<S>::week_range(date);

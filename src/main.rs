@@ -9,10 +9,9 @@
 )]
 
 use std::collections::HashMap;
-use std::str::FromStr;
+
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use axum::extract::{OriginalUri, Query};
 use axum::http::uri::InvalidUri;
 use axum::response::{IntoResponse, Response};
@@ -26,8 +25,7 @@ use thiserror::Error;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::services::ServeDir;
 
-use crate::marvel::{auth, etag, Marvel};
-use crate::middleware::uri;
+use crate::marvel::{new_marvel_service, Marvel};
 
 mod marvel;
 mod middleware;
@@ -88,7 +86,7 @@ async fn marvel_unlimited_comics<S>(
     OriginalUri(original_uri): OriginalUri,
 ) -> Result<Html<String>, AppError>
 where
-    S: marvel::Client,
+    S: marvel::WebClient,
 {
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", original_uri.path());
@@ -110,27 +108,24 @@ async fn enforce_date_query<B>(
     req: axum::http::Request<B>,
     next: axum::middleware::Next<B>,
 ) -> Result<axum::response::Response, AppError> {
-    if req.uri().query().is_none() {
-        let default_uri = OriginalUri(Uri::from_static("/"));
-        let original_uri = req
-            .extensions()
-            .get::<OriginalUri>()
-            .unwrap_or(&default_uri)
-            .path();
-
-        let date = req
-            .extensions()
-            .get::<Query<Date>>()
-            .unwrap_or(&Query(Date { date: today() }))
-            .date;
-
-        return Ok(
-            axum::response::Redirect::temporary(&format!("{original_uri}?date={date}"))
-                .into_response(),
-        );
+    if req.uri().query().is_some() {
+        return Ok(next.run(req).await);
     }
 
-    Ok(next.run(req).await)
+    let default_uri = OriginalUri(Uri::from_static("/"));
+    let original_uri = req
+        .extensions()
+        .get::<OriginalUri>()
+        .unwrap_or(&default_uri)
+        .path();
+
+    let date = req
+        .extensions()
+        .get::<Query<Date>>()
+        .unwrap_or(&Query(Date { date: today() }))
+        .date;
+
+    Ok(axum::response::Redirect::temporary(&format!("{original_uri}?date={date}")).into_response())
 }
 
 #[tokio::main]
@@ -140,21 +135,8 @@ async fn main() {
 
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-    let svc = ServiceBuilder::new()
-        .layer(etag::CacheMiddlewareLayer::new(etag::new_etag_cache()))
-        .layer(uri::MiddlewareLayer::new(
-            "gateway.marvel.com",
-            hyper::http::uri::Scheme::HTTPS,
-            "/v1/public",
-        ))
-        .layer(auth::MiddlewareLayer::new(
-            include_str!("../pub.txt"), // todo: formalize, this is janky
-            include_str!("../priv.txt"),
-        ))
-        .service(client.clone());
-    let marvel_client = Marvel::new(svc);
 
-    let state = Arc::new(ComicShelf::new(tera, marvel_client));
+    let state = Arc::new(ComicShelf::new(tera, new_marvel_service(&client)));
 
     let app = axum::Router::new()
         .nest(
