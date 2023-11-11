@@ -18,6 +18,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use hyper_tls::HttpsConnector;
 use marvel::router::MARVEL_PATH;
+use marvel::WebClient;
 use serde_json::Value;
 use tera::{Context, Tera};
 use thiserror::Error;
@@ -57,39 +58,6 @@ impl IntoResponse for AppError {
     }
 }
 
-struct ComicShelf<S> {
-    tera: Tera,
-    marvel_client: Marvel<S>,
-}
-
-impl<S> ComicShelf<S> {
-    fn new(tera: Tera, marvel_client: Marvel<S>) -> Self {
-        ComicShelf {
-            tera,
-            marvel_client,
-        }
-    }
-}
-
-async fn marvel_unlimited_comics<S>(
-    State(state): State<Arc<ComicShelf<S>>>,
-    Query(query): Query<Date>,
-    OriginalUri(original_uri): OriginalUri,
-) -> Result<Html<String>, AppError>
-where
-    S: marvel::WebClient,
-{
-    let mut ctx = Context::new();
-    ctx.insert("PageEndpoint", original_uri.path());
-
-    ctx.insert("Date", &query.date.to_string());
-
-    let result = state.marvel_client.weekly_comics(query.date).await?;
-    ctx.insert("results", &result);
-
-    Ok(Html(state.tera.render("marvel-unlimited.html", &ctx)?))
-}
-
 fn following(args: &HashMap<String, Value>) -> tera::Result<Value> {
     let _ = args.get("index").ok_or(tera::Error::msg("not found"))?; // todo use for db check
     Ok(tera::to_value(false)?)
@@ -103,17 +71,9 @@ async fn main() {
     let https = HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(https);
 
-    let state = Arc::new(ComicShelf::new(tera, new_marvel_service(&client)));
-
     let app = axum::Router::new()
-        .nest(
-            MARVEL_PATH,
-            axum::Router::new()
-                .route("/comics", get(marvel_unlimited_comics))
-                .layer(ServiceBuilder::new().layer(axum::middleware::from_fn(enforce_date_query))),
-        )
-        .nest_service("/static", ServeDir::new("static"))
-        .with_state(state);
+        .nest(MARVEL_PATH, marvel::router::new(tera, &client))
+        .nest_service("/static", ServeDir::new("static"));
 
     axum::Server::bind(&"127.0.0.1:8080".parse().unwrap())
         .serve(app.into_make_service())

@@ -1,6 +1,6 @@
 use chrono::{Datelike, Days, Months, NaiveDate, Weekday};
 use futures_util::future::BoxFuture;
-use hyper::{client::HttpConnector, Body, Request};
+use hyper::{client::HttpConnector, Body, Client, Request};
 use hyper_tls::HttpsConnector;
 use tower::{BoxError, Service, ServiceBuilder};
 
@@ -64,6 +64,13 @@ pub struct Marvel<S> {
 
 impl<S> Marvel<S> {
     pub fn new(svc: S) -> Self {
+        Marvel { svc }
+    }
+
+    pub fn new_from_client(
+        client: &Client<HttpsConnector<HttpConnector>>,
+    ) -> Marvel<impl WebClient> {
+        let svc = new_web_client(client);
         Marvel { svc }
     }
 

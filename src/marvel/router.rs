@@ -1,13 +1,58 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{OriginalUri, Query},
-    response::IntoResponse,
+    response::{Html, IntoResponse},
+    routing::get,
 };
 use chrono::{NaiveDate, Utc};
-use hyper::Uri;
+use hyper::{client::HttpConnector, Client, Uri};
+use hyper_tls::HttpsConnector;
+use tera::{Context, Tera};
+use tower::ServiceBuilder;
 
-use crate::middleware;
+use crate::middleware::{self, Error};
+
+use super::{new_marvel_service, Marvel, WebClient};
 
 pub const MARVEL_PATH: &str = "/marvel-unlimited";
+
+struct State<S> {
+    tera: Tera,
+    marvel_client: Marvel<S>,
+}
+
+pub fn new(tera: Tera, client: &Client<HttpsConnector<HttpConnector>>) -> axum::Router {
+    let marvel_client = new_marvel_service(client);
+    let state = Arc::new(State {
+        tera,
+        marvel_client,
+    });
+
+    axum::Router::new()
+        .route("/comics", get(comics))
+        .layer(ServiceBuilder::new().layer(axum::middleware::from_fn(enforce_date_query)))
+        .with_state(state)
+}
+
+async fn comics<S>(
+    axum::extract::State(state): axum::extract::State<Arc<State<S>>>,
+    Query(query): Query<Date>,
+    OriginalUri(original_uri): OriginalUri,
+) -> Result<Html<String>, Error>
+where
+    S: WebClient,
+{
+    let mut ctx = Context::new();
+    ctx.insert("PageEndpoint", original_uri.path());
+
+    ctx.insert("Date", &query.date.to_string());
+
+    let result = state.marvel_client.weekly_comics(query.date).await?;
+    ctx.insert("results", &result);
+
+    Ok(Html(state.tera.render("marvel-unlimited.html", &ctx)?))
+}
 
 fn today() -> NaiveDate {
     Utc::now().date_naive()
