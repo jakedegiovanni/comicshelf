@@ -10,6 +10,7 @@ use self::template::DataWrapper;
 
 pub mod auth;
 pub mod etag;
+pub mod router;
 pub mod template;
 
 pub trait WebClient:

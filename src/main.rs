@@ -16,16 +16,19 @@ use axum::extract::{OriginalUri, Query};
 use axum::http::uri::InvalidUri;
 use axum::response::{IntoResponse, Response};
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
-use chrono::{NaiveDate, ParseError, Utc};
-use hyper::Uri;
 use hyper_tls::HttpsConnector;
+use marvel::router::MARVEL_PATH;
 use serde_json::Value;
 use tera::{Context, Tera};
 use thiserror::Error;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::services::ServeDir;
 
-use crate::marvel::{new_marvel_service, Marvel};
+use crate::marvel::{
+    new_marvel_service,
+    router::{enforce_date_query, Date},
+    Marvel,
+};
 
 mod marvel;
 mod middleware;
@@ -40,8 +43,6 @@ pub enum AppError {
     Box(#[from] BoxError),
     #[error("hyper error")]
     HyperError(#[from] hyper::http::Error),
-    #[error("parse error")]
-    ParseError(#[from] ParseError),
     #[error("uri error")]
     UriError(#[from] InvalidUri),
 }
@@ -70,16 +71,6 @@ impl<S> ComicShelf<S> {
     }
 }
 
-fn today() -> NaiveDate {
-    Utc::now().date_naive()
-}
-
-#[derive(serde::Deserialize)]
-struct Date {
-    #[serde(default = "today")]
-    date: NaiveDate,
-}
-
 async fn marvel_unlimited_comics<S>(
     State(state): State<Arc<ComicShelf<S>>>,
     Query(query): Query<Date>,
@@ -104,30 +95,6 @@ fn following(args: &HashMap<String, Value>) -> tera::Result<Value> {
     Ok(tera::to_value(false)?)
 }
 
-async fn enforce_date_query<B>(
-    req: axum::http::Request<B>,
-    next: axum::middleware::Next<B>,
-) -> Result<axum::response::Response, AppError> {
-    if req.uri().query().is_some() {
-        return Ok(next.run(req).await);
-    }
-
-    let default_uri = OriginalUri(Uri::from_static("/"));
-    let original_uri = req
-        .extensions()
-        .get::<OriginalUri>()
-        .unwrap_or(&default_uri)
-        .path();
-
-    let date = req
-        .extensions()
-        .get::<Query<Date>>()
-        .unwrap_or(&Query(Date { date: today() }))
-        .date;
-
-    Ok(axum::response::Redirect::temporary(&format!("{original_uri}?date={date}")).into_response())
-}
-
 #[tokio::main]
 async fn main() {
     let mut tera = Tera::new("templates/**/*.html").unwrap();
@@ -140,7 +107,7 @@ async fn main() {
 
     let app = axum::Router::new()
         .nest(
-            "/marvel-unlimited",
+            MARVEL_PATH,
             axum::Router::new()
                 .route("/comics", get(marvel_unlimited_comics))
                 .layer(ServiceBuilder::new().layer(axum::middleware::from_fn(enforce_date_query))),
