@@ -9,13 +9,16 @@
 )]
 
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::anyhow;
 use axum::extract::{OriginalUri, Query};
+use axum::http::uri::InvalidUri;
 use axum::response::{IntoResponse, Response};
 use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use chrono::{NaiveDate, ParseError, Utc};
+use hyper::Uri;
 use hyper_tls::HttpsConnector;
 use serde_json::Value;
 use tera::{Context, Tera};
@@ -41,6 +44,8 @@ pub enum AppError {
     HyperError(#[from] hyper::http::Error),
     #[error("parse error")]
     ParseError(#[from] ParseError),
+    #[error("uri error")]
+    UriError(#[from] InvalidUri),
 }
 
 impl IntoResponse for AppError {
@@ -67,9 +72,19 @@ impl<S> ComicShelf<S> {
     }
 }
 
+fn today() -> NaiveDate {
+    Utc::now().date_naive()
+}
+
+#[derive(serde::Deserialize)]
+struct Date {
+    #[serde(default = "today")]
+    date: NaiveDate,
+}
+
 async fn marvel_unlimited_comics<S>(
     State(state): State<Arc<ComicShelf<S>>>,
-    Query(query): Query<HashMap<String, String>>,
+    Query(query): Query<Date>,
     OriginalUri(original_uri): OriginalUri,
 ) -> Result<Html<String>, AppError>
 where
@@ -78,15 +93,9 @@ where
     let mut ctx = Context::new();
     ctx.insert("PageEndpoint", original_uri.path());
 
-    let date = query
-        .get("date")
-        .ok_or(anyhow!("must supply a date parameter"))?;
-    ctx.insert("Date", date);
+    ctx.insert("Date", &query.date.to_string());
 
-    let result = state
-        .marvel_client
-        .weekly_comics(date.parse::<NaiveDate>()?)
-        .await?;
+    let result = state.marvel_client.weekly_comics(query.date).await?;
     ctx.insert("results", &result);
 
     Ok(Html(state.tera.render("marvel-unlimited.html", &ctx)?))
@@ -101,26 +110,22 @@ async fn enforce_date_query<B>(
     req: axum::http::Request<B>,
     next: axum::middleware::Next<B>,
 ) -> Result<axum::response::Response, AppError> {
-    let q = req.uri().query();
-    if q.is_none() || !q.unwrap().contains("date") {
-        let (p, _) = req.into_parts();
-        let original_uri = p.extensions.get::<OriginalUri>().unwrap().path();
+    if req.uri().query().is_none() {
+        let default_uri = OriginalUri(Uri::from_static("/"));
+        let original_uri = req
+            .extensions()
+            .get::<OriginalUri>()
+            .unwrap_or(&default_uri)
+            .path();
 
-        let p = p.uri.into_parts();
-        let pq = p
-            .path_and_query
-            .unwrap_or(hyper::http::uri::PathAndQuery::from_static("/"));
-        let query = pq.query().unwrap_or("");
-
-        let date = Utc::now().date_naive().to_string();
-        let query = if query.is_empty() {
-            format!("date={date}")
-        } else {
-            format!("{query}&date={date}")
-        };
+        let date = req
+            .extensions()
+            .get::<Query<Date>>()
+            .unwrap_or(&Query(Date { date: today() }))
+            .date;
 
         return Ok(
-            axum::response::Redirect::temporary(format!("{original_uri}?{query}").as_str())
+            axum::response::Redirect::temporary(&format!("{original_uri}?date={date}"))
                 .into_response(),
         );
     }
