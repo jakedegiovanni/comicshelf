@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{OriginalUri, Query},
+    extract::{OriginalUri, Query, State},
     response::{Html, IntoResponse},
     routing::get,
 };
@@ -13,18 +13,18 @@ use tower::ServiceBuilder;
 
 use crate::middleware::{self, Error};
 
-use super::{new_marvel_service, Marvel, WebClient};
+use super::{Marvel, WebClient};
 
 pub const MARVEL_PATH: &str = "/marvel-unlimited";
 
-struct State<S> {
+struct MarvelState<S> {
     tera: Tera,
     marvel_client: Marvel<S>,
 }
 
 pub fn new(tera: Tera, client: &Client<HttpsConnector<HttpConnector>>) -> axum::Router {
-    let marvel_client = new_marvel_service(client);
-    let state = Arc::new(State {
+    let marvel_client = Marvel::new_from_client(client);
+    let state = Arc::new(MarvelState {
         tera,
         marvel_client,
     });
@@ -36,7 +36,7 @@ pub fn new(tera: Tera, client: &Client<HttpsConnector<HttpConnector>>) -> axum::
 }
 
 async fn comics<S>(
-    axum::extract::State(state): axum::extract::State<Arc<State<S>>>,
+    State(state): State<Arc<MarvelState<S>>>,
     Query(query): Query<Date>,
     OriginalUri(original_uri): OriginalUri,
 ) -> Result<Html<String>, Error>
@@ -68,7 +68,7 @@ pub async fn enforce_date_query<B>(
     req: axum::http::Request<B>,
     next: axum::middleware::Next<B>,
 ) -> Result<axum::response::Response, middleware::Error> {
-    if req.uri().query().is_some() {
+    if req.uri().query().is_some() && req.uri().query().unwrap().contains("date") {
         return Ok(next.run(req).await);
     }
 

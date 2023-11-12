@@ -72,6 +72,7 @@ where
                 .path_and_query()
                 .ok_or(anyhow!("no path or query"))?
                 .clone();
+            let key = key.as_str();
             let mut headers = req.headers().clone();
 
             let (mut p, b) = req.into_parts();
@@ -80,7 +81,7 @@ where
             match cache
                 .read()
                 .expect("could not read from the cache")
-                .get(key.as_str())
+                .get(key)
             {
                 Some(wrapper) => {
                     println!(
@@ -98,15 +99,13 @@ where
             p.headers = headers;
             let req = Request::from_parts(p, b);
 
-            let key = key.to_string();
-
             let response = this.call(req).await.map_err(Into::into)?;
             if response.status() == StatusCode::NOT_MODIFIED {
                 println!("using cache");
                 Ok(cache
                     .read()
                     .expect("could not read from the cache")
-                    .get(key.as_str())
+                    .get(key)
                     .ok_or(anyhow!(
                         "an item expected to be in the cache could not be found"
                     ))?
@@ -122,7 +121,7 @@ where
                 cache
                     .write()
                     .expect("could not write to the cache")
-                    .insert(key, result.clone());
+                    .insert(key.to_owned(), result.clone());
                 Ok(result)
             }
         })

@@ -90,7 +90,7 @@ where
             let q = pq.query().map_or(String::new(), |q| format!("?{q}"));
 
             let path = if path.contains(path_prefix) {
-                path.to_string()
+                path.to_owned()
             } else {
                 format!("{path_prefix}{path}")
             };

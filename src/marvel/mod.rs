@@ -1,6 +1,6 @@
 use chrono::{Datelike, Days, Months, NaiveDate, Weekday};
 use futures_util::future::BoxFuture;
-use hyper::{client::HttpConnector, Body, Client, Request};
+use hyper::{client::HttpConnector, Body, Request};
 use hyper_tls::HttpsConnector;
 use tower::{BoxError, Service, ServiceBuilder};
 
@@ -37,40 +37,32 @@ impl<S> WebClient for S where
 {
 }
 
-fn new_web_client(client: &hyper::Client<HttpsConnector<HttpConnector>>) -> impl WebClient {
-    ServiceBuilder::new()
-        .layer(etag::CacheMiddlewareLayer::new(etag::new_etag_cache()))
-        .layer(uri::MiddlewareLayer::new(
-            "gateway.marvel.com",
-            hyper::http::uri::Scheme::HTTPS,
-            "/v1/public",
-        ))
-        .layer(auth::MiddlewareLayer::new(
-            include_str!("../../pub.txt"), // todo: formalize, this is janky
-            include_str!("../../priv.txt"),
-        ))
-        .service(client.clone())
-}
-
-pub fn new_marvel_service(
-    client: &hyper::Client<HttpsConnector<HttpConnector>>,
-) -> Marvel<impl WebClient> {
-    Marvel::new(new_web_client(client))
-}
-
 pub struct Marvel<S> {
     svc: S,
 }
 
+impl Marvel<()> {
+    pub fn new_from_client(
+        client: &hyper::Client<HttpsConnector<HttpConnector>>,
+    ) -> Marvel<impl WebClient> {
+        let svc = ServiceBuilder::new()
+            .layer(etag::CacheMiddlewareLayer::new(etag::new_etag_cache()))
+            .layer(uri::MiddlewareLayer::new(
+                "gateway.marvel.com",
+                hyper::http::uri::Scheme::HTTPS,
+                "/v1/public",
+            ))
+            .layer(auth::MiddlewareLayer::new(
+                include_str!("../../pub.txt"), // todo: formalize, this is janky
+                include_str!("../../priv.txt"),
+            ))
+            .service(client.clone());
+        Marvel::new(svc)
+    }
+}
+
 impl<S> Marvel<S> {
     pub fn new(svc: S) -> Self {
-        Marvel { svc }
-    }
-
-    pub fn new_from_client(
-        client: &Client<HttpsConnector<HttpConnector>>,
-    ) -> Marvel<impl WebClient> {
-        let svc = new_web_client(client);
         Marvel { svc }
     }
 

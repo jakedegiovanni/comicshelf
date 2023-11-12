@@ -10,26 +10,17 @@
 
 use std::collections::HashMap;
 
-use std::sync::Arc;
-
-use axum::extract::{OriginalUri, Query};
 use axum::http::uri::InvalidUri;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{extract::State, http::StatusCode, response::Html, routing::get};
 use hyper_tls::HttpsConnector;
 use marvel::router::MARVEL_PATH;
-use marvel::WebClient;
-use serde_json::Value;
-use tera::{Context, Tera};
-use thiserror::Error;
-use tower::{BoxError, ServiceBuilder};
-use tower_http::services::ServeDir;
 
-use crate::marvel::{
-    new_marvel_service,
-    router::{enforce_date_query, Date},
-    Marvel,
-};
+use serde_json::Value;
+use tera::Tera;
+use thiserror::Error;
+use tower::BoxError;
+use tower_http::services::ServeDir;
 
 mod marvel;
 mod middleware;
