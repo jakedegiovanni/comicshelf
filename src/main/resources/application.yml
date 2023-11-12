@@ -1,11 +1,6 @@
 spring:
   application:
     name: comicshelf
-  mvc:
-    static-path: /static/**
-  web:
-    resources:
-      static-locations: classpath:/static
 
 logging:
   level:
