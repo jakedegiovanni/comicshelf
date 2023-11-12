@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: comicshelf
+
+logging:
+  level:
+    com.github.jakedegiovanni.comicshelf: DEBUG
