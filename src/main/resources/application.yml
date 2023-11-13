@@ -1,11 +1,9 @@
 spring:
   application:
     name: comicshelf
+  mvc:
+    static-path-pattern: /static/**
 
 logging:
   level:
     com.github.jakedegiovanni.comicshelf: DEBUG
-
-gg:
-  jte:
-    developmentMode: true

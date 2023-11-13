@@ -1,4 +1,4 @@
-package com.github.jakedegiovanni.comicshelf;
+package io.github.jakedegiovanni.comicshelf;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

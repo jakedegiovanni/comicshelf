@@ -1,4 +1,4 @@
-@import com.github.jakedegiovanni.comicshelf.HelloController.HelloModel
+@import io.github.jakedegiovanni.comicshelf.HelloController.HelloModel
 
 @param HelloModel model
 

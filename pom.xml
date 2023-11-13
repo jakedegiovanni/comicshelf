@@ -8,9 +8,12 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.github.jakedegiovanni.comicshelf</groupId>
+    <groupId>io.github.jakedegiovanni.comicshelf</groupId>
     <artifactId>comicshelf</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
+    <name>Comicshelf</name>
+    <description>Keep track of upcoming issues.</description>
 
     <packaging>jar</packaging>
 
