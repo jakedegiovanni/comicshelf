@@ -1,8 +1,7 @@
-use axum::{http::uri::InvalidUri, response::IntoResponse, BoxError};
+use axum::{http::uri::InvalidUri, response::IntoResponse};
 use hyper::StatusCode;
 use thiserror::Error;
-
-pub mod uri;
+use tower::BoxError;
 
 #[derive(Error, Debug)]
 pub enum Error {
