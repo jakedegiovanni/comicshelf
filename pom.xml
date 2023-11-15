@@ -50,6 +50,11 @@
             <version>${jte.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
         <!-- testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

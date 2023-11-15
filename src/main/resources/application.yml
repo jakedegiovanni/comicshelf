@@ -6,4 +6,8 @@ spring:
 
 logging:
   level:
-    com.github.jakedegiovanni.comicshelf: DEBUG
+    root: INFO
+    io.github.jakedegiovanni.comicshelf: DEBUG
+
+marvel:
+  url: https://gateway.marvel.com/v1/public
