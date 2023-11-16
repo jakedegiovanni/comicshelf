@@ -29,10 +29,10 @@ body {
 .navbar {
     display: flex;
     justify-content: space-between;
-    position: sticky;
+    /* position: sticky; */
     top: 0;
     z-index: 1;
-    box-shadow: 0 0 8px 0 black;
+    /* box-shadow: 0 0 8px 0 black; */
 }
 
 .navbar>div,

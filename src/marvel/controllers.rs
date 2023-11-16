@@ -1,4 +1,5 @@
 use axum::{
+    debug_handler,
     extract::{OriginalUri, Query},
     response::Html,
 };
@@ -6,6 +7,7 @@ use tera::Context;
 
 use crate::{app::AppState, errors::Error, middleware::Date};
 
+#[debug_handler(state = AppState)]
 pub async fn comics(
     state: AppState,
     Query(query): Query<Date>,

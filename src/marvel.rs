@@ -24,15 +24,22 @@ pub struct RealClient {
     client: reqwest::Client,
     pub_key: &'static str,
     priv_key: &'static str,
+    base_url: &'static str,
     cache: Arc<RwLock<HashMap<String, DataWrapper>>>,
 }
 
 impl RealClient {
-    pub fn new(client: reqwest::Client, pub_key: &'static str, priv_key: &'static str) -> Self {
+    pub fn new(
+        client: reqwest::Client,
+        pub_key: &'static str,
+        priv_key: &'static str,
+        base_url: &'static str,
+    ) -> Self {
         RealClient {
             client,
             pub_key,
             priv_key,
+            base_url,
             cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -63,14 +70,7 @@ impl RealClient {
     }
 
     fn uri(&self, endpoint: &str) -> String {
-        let auth = self.auth();
-        let prefix = if endpoint.contains("/v1/public") {
-            ""
-        } else {
-            "/v1/public"
-        };
-
-        format!("https://gateway.marvel.com{prefix}{endpoint}&{auth}")
+        format!("{}{endpoint}&{}", self.base_url, self.auth())
     }
 }
 
@@ -78,32 +78,25 @@ impl RealClient {
 impl Client for RealClient {
     async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper, anyhow::Error> {
         let (date, date2) = RealClient::week_range(date);
+        let endpoint = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={date},{date2}&hasDigitalIssue=true&orderBy=issueNumber&limit=100");
+        let uri = self.uri(&endpoint);
 
         let mut headers = HeaderMap::new();
-
-        let endpoint = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={date},{date2}&hasDigitalIssue=true&orderBy=issueNumber&limit=100");
-        match self
+        if let Some(wrapper) = self
             .cache
             .read()
             .expect("could not read from the cache")
             .get(&endpoint)
         {
-            Some(wrapper) => {
-                println!(
-                    "key {:?} exists in cache using etag {:?}",
-                    &endpoint, wrapper.etag
-                );
-                headers.insert(
-                    "If-None-Match",
-                    HeaderValue::from_str(&wrapper.etag).map_err(|e| anyhow!(e))?,
-                );
-            }
-            None => {
-                println!("key {:?} does not exist in cache", &endpoint);
-            }
+            println!(
+                "key {:?} exists in cache using etag {:?}",
+                &endpoint, wrapper.etag
+            );
+            headers.insert(
+                "If-None-Match",
+                HeaderValue::from_str(&wrapper.etag).map_err(|e| anyhow!(e))?,
+            );
         };
-
-        let uri = self.uri(&endpoint);
 
         let response = self
             .client
@@ -116,8 +109,7 @@ impl Client for RealClient {
             .map_err(|e| anyhow!(e))?;
 
         if response.status() == StatusCode::NOT_MODIFIED {
-            println!("using cache");
-            return Ok(self
+            let wrapper = self
                 .cache
                 .read()
                 .expect("could not read from cache")
@@ -125,7 +117,10 @@ impl Client for RealClient {
                 .ok_or(anyhow!(
                     "an item expeected to be in the cache could not be found"
                 ))?
-                .clone());
+                .clone();
+
+            println!("etag {:?} not modified, using cache", wrapper.etag);
+            return Ok(wrapper);
         }
 
         let result = response

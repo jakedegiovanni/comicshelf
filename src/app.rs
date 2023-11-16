@@ -17,6 +17,7 @@ impl App {
             client,
             include_str!("../pub.txt"),
             include_str!("../priv.txt"),
+            "https://gateway.marvel.com/v1/public",
         ));
 
         App {
