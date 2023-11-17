@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.concurrent.Executors;
 
 @Configuration
 @EnableConfigurationProperties
@@ -15,6 +16,7 @@ public class AppConfig {
     HttpClient httpClient() {
         return HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
+                .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .build();
     }
 

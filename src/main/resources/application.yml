@@ -10,4 +10,6 @@ logging:
     io.github.jakedegiovanni.comicshelf: DEBUG
 
 marvel:
-  url: https://gateway.marvel.com/v1/public
+  base-url: https://gateway.marvel.com/v1/public
+  pub: pub.txt # todo - should be able to use more than just filepaths
+  priv: priv.txt

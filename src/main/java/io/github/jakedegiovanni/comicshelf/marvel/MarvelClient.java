@@ -9,48 +9,80 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.HexFormat;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MarvelClient {
 
-    private record DateRange(LocalDate start, LocalDate end) {};
+    private record DateRange(LocalDate start, LocalDate end) {}
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final MarvelConfig config;
-
-    // todo handle bad status codes
+    private final Clock clock;
+    private final EtagCache<Comic> cache;
 
     public DataWrapper<Comic> weeklyComics(LocalDate today) throws IOException, InterruptedException {
         DateRange dates = getDateRange(today);
-        var endpoint = String.format(
-                "/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100",
-                dates.start().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                dates.end().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        );
-        HttpResponse<String> response = get(endpoint);
-
-        log.debug("raw json: {}", response.body());
-        return objectMapper.readValue(response.body(), new TypeReference<>() {
-        });
+        var endpoint = STR
+                ."/comics?format=comic&formatType=comic&noVariants=true&dateRange=\{dates.start().format(ISO_LOCAL_DATE)},\{dates.end().format(ISO_LOCAL_DATE)}&hasDigitalIssue=true&orderBy=issueNumber&limit=100";
+        return get(endpoint);
     }
 
-    private HttpResponse<String> get(String endpoint) throws IOException, InterruptedException {
-        var uri = config.uri(endpoint);
+    private DataWrapper<Comic> get(String endpoint) throws IOException, InterruptedException {
+        var uri = URI.create(STR."\{config.getBaseUrl()}\{endpoint}&\{auth()}");
         var request = HttpRequest.newBuilder()
                 .GET()
-                .uri(uri)
-//                .setHeader("", "") todo etag cache
-                .build();
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                .uri(uri);
+
+        cache.get(endpoint).ifPresent(comicDataWrapper -> {
+            var etag = comicDataWrapper.getEtag();
+            log.debug("endpoint {} present in cache, using etag {}", endpoint, etag);
+            request.setHeader("If-None-Match", comicDataWrapper.getEtag());
+        });
+
+        var resp = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        // todo handle bad status codes
+        if (resp.statusCode() == 304) {
+            return cache.get(endpoint).orElseThrow(() -> new RuntimeException("expected entry not found"));
+        }
+
+        var result = objectMapper.readValue(resp.body(), new TypeReference<DataWrapper<Comic>>() {});
+        cache.put(endpoint, result);
+        return result;
+    }
+
+    private String auth() {
+        var now = Instant.now(clock).toEpochMilli();
+
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            log.error("could not get md5 message digest", e);
+            // todo handle
+            throw new RuntimeException(e);
+        }
+
+        String hash = HexFormat.of().formatHex(md.digest(
+                STR."\{now}\{config.getPriv()}\{config.getPub()}".getBytes(UTF_8)
+        ));
+        return STR."ts=\{now}&hash=\{hash}&apikey=\{config.getPub()}";
     }
 
     private DateRange getDateRange(LocalDate today) {

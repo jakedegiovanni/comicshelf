@@ -35,3 +35,4 @@
 - support more than just marvel unlimited
 - error page
 - reload static & template files
+- sdk and server modules
