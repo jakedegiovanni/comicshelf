@@ -6,6 +6,7 @@ import io.github.jakedegiovanni.comicshelf.marvel.model.Comic;
 import io.github.jakedegiovanni.comicshelf.marvel.model.DataWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,6 +21,8 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HexFormat;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -31,13 +34,16 @@ public class MarvelClient {
 
     private record DateRange(LocalDate start, LocalDate end) {}
 
+    private final ConcurrentHashMap<String, DataWrapper<Comic>> comicCache = new ConcurrentHashMap<>();
+
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final MarvelConfig config;
     private final Clock clock;
-    private final EtagCache<Comic> cache;
 
     public DataWrapper<Comic> weeklyComics(LocalDate today) throws IOException, InterruptedException {
+        log.debug("getting weekly comics");
+
         DateRange dates = getDateRange(today);
         var endpoint = STR
                 ."/comics?format=comic&formatType=comic&noVariants=true&dateRange=\{dates.start().format(ISO_LOCAL_DATE)},\{dates.end().format(ISO_LOCAL_DATE)}&hasDigitalIssue=true&orderBy=issueNumber&limit=100";
@@ -50,20 +56,23 @@ public class MarvelClient {
                 .GET()
                 .uri(uri);
 
-        cache.get(endpoint).ifPresent(comicDataWrapper -> {
+        if (comicCache.containsKey(endpoint)) {
+            var comicDataWrapper = comicCache.get(endpoint);
             var etag = comicDataWrapper.getEtag();
             log.debug("endpoint {} present in cache, using etag {}", endpoint, etag);
             request.setHeader("If-None-Match", comicDataWrapper.getEtag());
-        });
+        }
 
         var resp = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
         // todo handle bad status codes
         if (resp.statusCode() == 304) {
-            return cache.get(endpoint).orElseThrow(() -> new RuntimeException("expected entry not found"));
+            log.debug("response not modified, using etag cache entry");
+            return Optional.ofNullable(comicCache.get(endpoint)).orElseThrow(() -> new RuntimeException("expected entry not found"));
         }
 
         var result = objectMapper.readValue(resp.body(), new TypeReference<DataWrapper<Comic>>() {});
-        cache.put(endpoint, result);
+        comicCache.put(endpoint, result);
+        log.debug("response cached, returning");
         return result;
     }
 
