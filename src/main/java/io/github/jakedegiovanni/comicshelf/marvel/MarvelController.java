@@ -25,6 +25,6 @@ public class MarvelController {
         model.addAttribute("model", client.weeklyComics(now));
         model.addAttribute("pageEndpoint", "/marvel-unlimited/comics");
         model.addAttribute("date", now.format(DateTimeFormatter.ISO_LOCAL_DATE));
-        return "comics";
+        return "marvel-unlimited/comics";
     }
 }
