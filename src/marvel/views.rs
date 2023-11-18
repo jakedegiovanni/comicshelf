@@ -44,16 +44,16 @@ pub struct Comic {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DataContainer {
+pub struct DataContainer<T> {
     offset: i32,
     limit: i32,
     total: i32,
     count: i32,
-    results: Vec<Comic>,
+    results: Vec<T>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DataWrapper {
+pub struct DataWrapper<T> {
     code: i32,
     status: String,
     copyright: String,
@@ -62,5 +62,5 @@ pub struct DataWrapper {
     #[serde(rename = "attributionHTML")]
     attribution_html: String,
     pub etag: String,
-    data: DataContainer,
+    data: DataContainer<T>,
 }

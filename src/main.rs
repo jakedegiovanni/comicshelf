@@ -1,13 +1,3 @@
-#![warn(
-    clippy::all,
-    clippy::correctness,
-    clippy::suspicious,
-    clippy::style,
-    clippy::complexity,
-    clippy::perf,
-    clippy::pedantic
-)]
-
 use std::collections::HashMap;
 use std::sync::Arc;
 

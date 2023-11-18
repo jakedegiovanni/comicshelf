@@ -11,12 +11,14 @@ use hyper::{HeaderMap, StatusCode};
 
 use crate::marvel::views::DataWrapper;
 
+use self::views::Comic;
+
 pub mod controllers;
 pub mod views;
 
 #[async_trait]
 pub trait Client: Send + Sync {
-    async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper, anyhow::Error>;
+    async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper<Comic>, anyhow::Error>;
 }
 
 #[derive(Debug)]
@@ -25,7 +27,7 @@ pub struct RealClient {
     pub_key: &'static str,
     priv_key: &'static str,
     base_url: &'static str,
-    cache: Arc<RwLock<HashMap<String, DataWrapper>>>,
+    cache: Arc<RwLock<HashMap<String, DataWrapper<Comic>>>>,
 }
 
 impl RealClient {
@@ -76,7 +78,7 @@ impl RealClient {
 
 #[async_trait]
 impl Client for RealClient {
-    async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper, anyhow::Error> {
+    async fn weekly_comics(&self, date: NaiveDate) -> Result<DataWrapper<Comic>, anyhow::Error> {
         let (date, date2) = RealClient::week_range(date);
         let endpoint = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={date},{date2}&hasDigitalIssue=true&orderBy=issueNumber&limit=100");
         let uri = self.uri(&endpoint);
@@ -124,7 +126,7 @@ impl Client for RealClient {
         }
 
         let result = response
-            .json::<DataWrapper>()
+            .json::<DataWrapper<Comic>>()
             .await
             .map_err(|e| anyhow!(e))?;
 
