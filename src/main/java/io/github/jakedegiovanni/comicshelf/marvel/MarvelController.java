@@ -30,20 +30,14 @@ public class MarvelController {
         var now = LocalDate.now(clock);
         var result = client.weeklyComics(now);
 
-        // tried to use virtual threads here over the loop and, alternatively, as the executor pool in completable future
-        // but something within the database layers was causing the thread to pin.
-        // will likely be able to migrate to virtual threads for the "following" population
-        // in either future library versions or future jdk releases
-        CompletableFuture.allOf(
-                result.getData().getResults().stream()
-                        .map(CompletableFuture::completedFuture)
-                        .map(f -> f.thenAcceptAsync(c -> {
-                            log.debug("checking if following: {}", c.getTitle());
-                            repository.findByInternalId(c.getId()).ifPresent((c1) -> c.setFollowing(true));
-                        }))
-                        .toArray(CompletableFuture[]::new)
-                )
-                .join();
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            result.getData().getResults().forEach(comic -> {
+                executor.submit(() -> {
+                    log.debug("checking if following: {}", comic.getTitle());
+                    repository.findByInternalId(comic.getId()).ifPresent(ignore -> comic.setFollowing(true));
+                });
+            });
+        }
 
         Page.setupModel(model, result, now);
         return "marvel-unlimited/comics";

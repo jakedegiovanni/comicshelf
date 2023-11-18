@@ -4,7 +4,7 @@ gg:
 
 spring:
   datasource:
-    url: jdbc:h2:file:./data/comicshelf
+    url: jdbc:h2:mem:comicshelf # file based db causes virtual threads to pin
     driverClassName: org.h2.Driver
     username: sa
     password: ""
