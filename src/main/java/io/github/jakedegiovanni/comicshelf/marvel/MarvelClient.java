@@ -6,7 +6,6 @@ import io.github.jakedegiovanni.comicshelf.marvel.model.Comic;
 import io.github.jakedegiovanni.comicshelf.marvel.model.DataWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
