@@ -2,6 +2,7 @@ package io.github.jakedegiovanni.comicshelf.marvel.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.List;
 
@@ -17,4 +18,5 @@ public class Comic {
     private int issuerNumber;
     private Item series;
     private List<Date> dates;
+    @JsonIgnore private boolean following;
 }

@@ -3,6 +3,7 @@ package io.github.jakedegiovanni.comicshelf;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 import java.net.http.HttpClient;
@@ -11,6 +12,7 @@ import java.util.concurrent.Executors;
 
 @Configuration
 @EnableConfigurationProperties
+@EnableJpaRepositories
 public class AppConfig {
 
     @Bean
