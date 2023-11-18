@@ -1,15 +1,15 @@
+@import io.github.jakedegiovanni.comicshelf.views.Page
 @import io.github.jakedegiovanni.comicshelf.marvel.model.DataWrapper
 @import io.github.jakedegiovanni.comicshelf.marvel.model.Comic
 
-@param DataWrapper<Comic> model
-@param String date
+@param Page<DataWrapper<Comic>> page
 
 @template.index(
-    date = date,
+    page = page,
     content = @`
         <base href="/marvel-unlimited/" />
 
-        @for(var comic : model.getData().getResults())
+        @for(var comic : page.getData().getData().getResults())
             @if(!comic.getTitle().toLowerCase().contains("variant"))
                 !{var resourceUri = comic.getSeries().getResourceURI();}
                 <div id="${comic.getId()}" class="container">
@@ -43,5 +43,5 @@
             @endif
         @endfor
     `,
-    footer = @`<a href="https://marvel.com">${model.getAttributionText()}</a>`
+    footer = @`<a href="https://marvel.com">${page.getData().getAttributionText()}</a>`
 )

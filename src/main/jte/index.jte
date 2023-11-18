@@ -1,6 +1,8 @@
 @import gg.jte.Content
 
-@param String date
+@import io.github.jakedegiovanni.comicshelf.views.Index
+
+@param Index page
 @param Content content
 @param Content footer
 
@@ -21,15 +23,15 @@
 <div class="bar navbar">
     <form method="get">
         <label for="date">Release Week</label>
-        <input type="date" id="date" name="date" value="${date}" />
+        <input type="date" id="date" name="date" value="${page.getDate()}" />
         <button type="submit">Submit</button>
     </form>
 
     <div>Marvel Unlimited ComicShelf</div>
 
     <div class="navigation">
-        <a class="nav-item" id="/marvel-unlimited/comics" href="/marvel-unlimited/comics?date=${date}">Comics</a>
-        <a class="nav-item" id="/marvel-unlimited/series" href="/marvel-unlimited/series?date=${date}">Series</a>
+        <a class="nav-item" id="/marvel-unlimited/comics" href="/marvel-unlimited/comics?date=${page.getDate()}">Comics</a>
+        <a class="nav-item" id="/marvel-unlimited/series" href="/marvel-unlimited/series?date=${page.getDate()}">Series</a>
     </div>
 </div>
 

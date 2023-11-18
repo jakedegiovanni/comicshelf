@@ -1,5 +1,6 @@
 package io.github.jakedegiovanni.comicshelf.marvel;
 
+import io.github.jakedegiovanni.comicshelf.views.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 @Controller
 @RequestMapping("/marvel-unlimited/comics")
@@ -22,8 +22,7 @@ public class MarvelController {
     @GetMapping
     public String weeklyComics(Model model) throws IOException, InterruptedException {
         var now = LocalDate.now(clock);
-        model.addAttribute("model", client.weeklyComics(now));
-        model.addAttribute("date", now.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        Page.setupModel(model, client.weeklyComics(now), now);
         return "marvel-unlimited/comics";
     }
 }
