@@ -23,7 +23,6 @@ public class MarvelController {
     public String weeklyComics(Model model) throws IOException, InterruptedException {
         var now = LocalDate.now(clock);
         model.addAttribute("model", client.weeklyComics(now));
-        model.addAttribute("pageEndpoint", "/marvel-unlimited/comics");
         model.addAttribute("date", now.format(DateTimeFormatter.ISO_LOCAL_DATE));
         return "marvel-unlimited/comics";
     }

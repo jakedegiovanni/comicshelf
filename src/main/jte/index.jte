@@ -1,6 +1,5 @@
 @import gg.jte.Content
 
-@param String pageEndpoint
 @param String date
 @param Content content
 @param Content footer
@@ -18,7 +17,7 @@
 
     <script src="https://unpkg.com/htmx.org@1.9.4" integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV" crossorigin="anonymous"></script>
 </head>
-<body onload="activateNavItems('${pageEndpoint}')">
+<body onload="activateNavItems()">
 <div class="bar navbar">
     <form method="get">
         <label for="date">Release Week</label>

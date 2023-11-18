@@ -2,11 +2,9 @@
 @import io.github.jakedegiovanni.comicshelf.marvel.model.Comic
 
 @param DataWrapper<Comic> model
-@param String pageEndpoint
 @param String date
 
 @template.index(
-    pageEndpoint = pageEndpoint,
     date = date,
     content = @`
         <base href="/marvel-unlimited/" />
