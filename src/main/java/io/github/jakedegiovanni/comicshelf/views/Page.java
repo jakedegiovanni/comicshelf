@@ -12,11 +12,11 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 public class Page<T> extends Index {
 
-    private final T data;
+    private final T contents;
 
-    public Page(LocalDate date, T data) {
+    public Page(LocalDate date, T contents) {
         super(date);
-        this.data = data;
+        this.contents = contents;
     }
 
     // todo - happy depending on spring here?

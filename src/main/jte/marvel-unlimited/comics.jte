@@ -9,7 +9,7 @@
     content = @`
         <base href="/marvel-unlimited/" />
 
-        @for(var comic : page.getData().getData().getResults())
+        @for(var comic : page.getContents().getData().getResults())
             @if(!comic.getTitle().toLowerCase().contains("variant"))
                 !{var resourceUri = comic.getSeries().getResourceURI();}
                 <div id="${comic.getId()}" class="container">
@@ -43,5 +43,5 @@
             @endif
         @endfor
     `,
-    footer = @`<a href="https://marvel.com">${page.getData().getAttributionText()}</a>`
+    footer = @`<a href="https://marvel.com">${page.getContents().getAttributionText()}</a>`
 )
