@@ -3,6 +3,9 @@ spring:
     name: comicshelf
   mvc:
     static-path-pattern: /static/**
+  threads:
+    virtual:
+      enabled: true
 
 logging:
   level:
