@@ -1,6 +1,7 @@
 package io.github.jakedegiovanni.comicshelf.comics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -31,15 +32,24 @@ public class ComicsController {
 
     private final ComicsRepository repository;
 
-    @PostMapping("/track")
-    public String track(TestForm form) {
-        var comic = repository.findByInternalId(form.getInternalId());
-        if (comic.isPresent()) {
-            repository.delete(comic.get());
-            return "follow";
-        }
-
-        repository.save(new Comic(form.getInternalId(), form.getTitle(), form.getSeries()));
+    @PostMapping("/follow")
+    @Transactional
+    public String follow(TestForm form) {
+        repository.findByInternalId(form.getInternalId()).ifPresentOrElse(
+                comic -> {
+                    comic.setSeries(form.getSeries());
+                    comic.setTitle(form.getTitle());
+                    repository.save(comic);
+                },
+                () -> repository.save(new Comic(form.getInternalId(), form.getTitle(), form.getSeries()))
+        );
         return "unfollow";
+    }
+
+    @PostMapping("/unfollow")
+    @Transactional
+    public String unfollow(TestForm form) {
+        repository.deleteByInternalId(form.getInternalId());
+        return "follow";
     }
 }

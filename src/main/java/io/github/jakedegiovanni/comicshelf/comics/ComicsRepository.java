@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface ComicsRepository extends JpaRepository<Comic, UUID> {
     Optional<Comic> findByInternalId(int internalId);
+
+    void deleteByInternalId(int internalId);
 }
