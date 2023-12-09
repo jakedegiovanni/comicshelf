@@ -1,15 +1,11 @@
 package io.github.jakedegiovanni.comicshelf.comics;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
@@ -17,14 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequiredArgsConstructor
 public class ComicsController {
 
-    public record ComicForm(
-            @JsonProperty("name") String title,
-            @JsonProperty("series") String series,
-            @JsonProperty("internal_id") int internalId
-    ) {}
-
     @Data @NoArgsConstructor
-    public static class TestForm {
+    public static class ComicForm {
         private String title;
         private String series;
         private int internalId;
@@ -34,7 +24,7 @@ public class ComicsController {
 
     @PostMapping("/follow")
     @Transactional
-    public String follow(TestForm form) {
+    public String follow(ComicForm form) {
         repository.findByInternalId(form.getInternalId()).ifPresentOrElse(
                 comic -> {
                     comic.setSeries(form.getSeries());
@@ -48,7 +38,7 @@ public class ComicsController {
 
     @PostMapping("/unfollow")
     @Transactional
-    public String unfollow(TestForm form) {
+    public String unfollow(ComicForm form) {
         repository.deleteByInternalId(form.getInternalId());
         return "follow";
     }
