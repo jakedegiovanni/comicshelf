@@ -1,11 +1,14 @@
 package io.github.jakedegiovanni.comicshelf.marvel.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.OffsetDateTime;
 
 @Data
 @NoArgsConstructor
 public class Date {
     private String type;
-    private String date; // todo - actual date?
+    private @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssZ") OffsetDateTime date;
 }

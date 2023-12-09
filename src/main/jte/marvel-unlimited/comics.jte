@@ -1,6 +1,7 @@
 @import io.github.jakedegiovanni.comicshelf.views.Page
 @import io.github.jakedegiovanni.comicshelf.marvel.model.DataWrapper
 @import io.github.jakedegiovanni.comicshelf.marvel.model.Comic
+@import java.time.format.DateTimeFormatter
 
 @param Page<DataWrapper<Comic>> page
 
@@ -28,7 +29,7 @@
                         <div class="marvel-links"><a href="series?series=${resourceUri}">${comic.getSeries().getName()}</a></div>
                         @for(var d : comic.getDates())
                             @if(d.getType().equals("onsaleDate"))
-                                <div class="marvel-links">${d.getDate()}</div>
+                                <div class="marvel-links">${d.getDate().format(DateTimeFormatter.ISO_LOCAL_DATE)}</div>
                             @endif
                         @endfor
                         @for(var u : comic.getUrls())
