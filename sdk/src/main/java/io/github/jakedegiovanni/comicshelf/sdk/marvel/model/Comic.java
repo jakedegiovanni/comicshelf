@@ -1,8 +1,8 @@
-package io.github.jakedegiovanni.comicshelf.server.marvel.model;
+package io.github.jakedegiovanni.comicshelf.sdk.marvel.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.List;
 

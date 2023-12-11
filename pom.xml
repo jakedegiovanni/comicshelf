@@ -43,6 +43,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.github.jakedegiovanni.comicshelf.sdk</groupId>
+                <artifactId>comicshelf-sdk</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte-spring-boot-starter-3</artifactId>
                 <version>${jte.version}</version>

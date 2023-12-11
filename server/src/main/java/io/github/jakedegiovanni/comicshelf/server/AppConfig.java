@@ -1,5 +1,11 @@
 package io.github.jakedegiovanni.comicshelf.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.jakedegiovanni.comicshelf.sdk.marvel.MarvelClient;
+import io.github.jakedegiovanni.comicshelf.sdk.marvel.MarvelConfig;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,8 +18,22 @@ import java.util.concurrent.Executors;
 
 @Configuration
 @EnableConfigurationProperties
+@ConfigurationProperties(prefix = "comicshelf")
+@Data @NoArgsConstructor
 @EnableJpaRepositories
 public class AppConfig {
+
+    private MarvelConfig marvel;
+
+    @Bean
+    public MarvelClient marvelClient(
+            HttpClient httpClient,
+            ObjectMapper objectMapper,
+            AppConfig config,
+            Clock clock
+    ) {
+        return new MarvelClient(httpClient, objectMapper, config.getMarvel(), clock);
+    }
 
     @Bean
     public HttpClient httpClient() {

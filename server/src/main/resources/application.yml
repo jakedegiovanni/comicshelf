@@ -13,5 +13,6 @@ logging:
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
     io.github.jakedegiovanni.comicshelf: DEBUG
 
-marvel:
-  base-url: https://gateway.marvel.com/v1/public
+comicshelf:
+  marvel:
+    base-url: https://gateway.marvel.com/v1/public

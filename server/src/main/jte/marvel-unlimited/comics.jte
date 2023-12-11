@@ -1,6 +1,6 @@
 @import io.github.jakedegiovanni.comicshelf.server.views.Page
-@import io.github.jakedegiovanni.comicshelf.server.marvel.model.DataWrapper
-@import io.github.jakedegiovanni.comicshelf.server.marvel.model.Comic
+@import io.github.jakedegiovanni.comicshelf.sdk.marvel.model.DataWrapper
+@import io.github.jakedegiovanni.comicshelf.sdk.marvel.model.Comic
 @import java.time.format.DateTimeFormatter
 
 @param Page<DataWrapper<Comic>> page

@@ -1,5 +1,6 @@
 package io.github.jakedegiovanni.comicshelf.server.marvel;
 
+import io.github.jakedegiovanni.comicshelf.sdk.marvel.MarvelClient;
 import io.github.jakedegiovanni.comicshelf.server.comics.ComicsRepository;
 import io.github.jakedegiovanni.comicshelf.server.views.Page;
 import lombok.RequiredArgsConstructor;

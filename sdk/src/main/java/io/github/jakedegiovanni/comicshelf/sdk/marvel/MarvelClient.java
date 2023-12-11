@@ -1,12 +1,11 @@
-package io.github.jakedegiovanni.comicshelf.server.marvel;
+package io.github.jakedegiovanni.comicshelf.sdk.marvel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.jakedegiovanni.comicshelf.server.marvel.model.Comic;
-import io.github.jakedegiovanni.comicshelf.server.marvel.model.DataWrapper;
+import io.github.jakedegiovanni.comicshelf.sdk.marvel.model.Comic;
+import io.github.jakedegiovanni.comicshelf.sdk.marvel.model.DataWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
@@ -26,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 
-@Service
 @RequiredArgsConstructor
 @Slf4j
 public class MarvelClient {

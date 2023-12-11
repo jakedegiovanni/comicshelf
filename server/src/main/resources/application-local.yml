@@ -16,6 +16,7 @@ spring:
     console:
       enabled: true
 
-marvel:
-  pub: pub.txt # todo - should be able to use more than just filepaths
-  priv: priv.txt
+comicshelf:
+  marvel:
+    pub: pub.txt # todo - should be able to use more than just filepaths
+    priv: priv.txt

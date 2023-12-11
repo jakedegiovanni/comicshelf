@@ -1,4 +1,4 @@
-package io.github.jakedegiovanni.comicshelf.server.marvel.model;
+package io.github.jakedegiovanni.comicshelf.sdk.marvel.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
