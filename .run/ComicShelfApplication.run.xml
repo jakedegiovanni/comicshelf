@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ComicShelfApplication" type="Application" factoryName="Application" nameIsGenerated="true">
-    <option name="MAIN_CLASS_NAME" value="io.github.jakedegiovanni.comicshelf.ComicShelfApplication" />
-    <module name="comicshelf" />
-    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=local -Djdk.tracePinnedThreads=full" />
+    <option name="MAIN_CLASS_NAME" value="io.github.jakedegiovanni.comicshelf.server.ComicShelfApplication" />
+    <module name="comicshelf-server" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=local -Djdk.tracePinnedThreads=full -Dgg.jte.templateLocation=server/src/main/jte" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="io.github.jakedegiovanni.comicshelf.*" />
+        <option name="PATTERN" value="io.github.jakedegiovanni.comicshelf.server.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

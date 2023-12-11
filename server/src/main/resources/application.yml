@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: comicshelf
+  mvc:
+    static-path-pattern: /static/**
+  threads:
+    virtual:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    io.github.jakedegiovanni.comicshelf: DEBUG
+
+marvel:
+  base-url: https://gateway.marvel.com/v1/public
