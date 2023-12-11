@@ -27,7 +27,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 
 @RequiredArgsConstructor
 @Slf4j
-public class MarvelClient {
+public final class MarvelClient {
 
     private record DateRange(LocalDate start, LocalDate end) {}
 
