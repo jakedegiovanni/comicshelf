@@ -12,9 +12,9 @@ pub enum Error {
     #[error("box error")]
     Box(#[from] BoxError),
     #[error("hyper error")]
-    HyperError(#[from] hyper::http::Error),
+    Hyper(#[from] hyper::http::Error),
     #[error("uri error")]
-    UriError(#[from] InvalidUri),
+    Uri(#[from] InvalidUri),
 }
 
 impl IntoResponse for Error {

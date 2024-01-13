@@ -64,3 +64,26 @@ pub struct DataWrapper<T> {
     pub etag: String,
     data: DataContainer<T>,
 }
+
+#[derive(Serialize, Debug)]
+pub struct MarvelUnlimited {
+    endpoint: String,
+    date: String,
+    results: DataWrapper<Comic>,
+}
+
+impl MarvelUnlimited {
+    pub fn new(endpoint: String, date: String, results: DataWrapper<Comic>) -> MarvelUnlimited {
+        MarvelUnlimited {
+            endpoint,
+            date,
+            results,
+        }
+    }
+
+    pub fn new_page(endpoint: String, date: String, results: DataWrapper<Comic>) -> tera::Context {
+        let mut ctx = tera::Context::new();
+        ctx.insert("page", &Self::new(endpoint, date, results));
+        ctx
+    }
+}
