@@ -1,5 +1,8 @@
 LINT_VERSION := 1.54.2
 
+.PHONY: all
+all: clean install lint generate build
+
 .PHONY: install
 install:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v${LINT_VERSION}
