@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jakedegiovanni/comicshelf/comicclient"
 	"github.com/spf13/cobra"
 )
 
@@ -194,6 +195,7 @@ func NewMarvelCommand() *cobra.Command {
 func NewMarvelClient(logger *slog.Logger) *MarvelClient {
 	chain := ClientMiddlewareChain(
 		AddBase(logger),
+		ClientMiddleware(comicclient.AddBaseMiddleware(logger, nil)),
 		ApiKeyMiddleware(logger, Pub, Priv),
 	)
 

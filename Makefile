@@ -1,7 +1,7 @@
 LINT_VERSION := 1.54.2
 
 .PHONY: all
-all: clean install lint generate build
+all: clean install lint generate test build
 
 .PHONY: install
 install:
@@ -22,6 +22,10 @@ build: clean
 .PHONY: run
 run:
 	go run . server
+
+.PHONY: test
+test:
+	go test -v ./...
 
 .PHONY: generate
 generate:
