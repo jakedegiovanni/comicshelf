@@ -11,7 +11,7 @@ type ServerConfig struct {
 	Address string
 }
 
-func NewServer(config ServerConfig) (*http.Server, *chi.Mux) {
+func NewServer(config ServerConfig) *http.Server {
 	router := chi.NewRouter()
 
 	router.Use(middleware.Recoverer)
@@ -19,5 +19,5 @@ func NewServer(config ServerConfig) (*http.Server, *chi.Mux) {
 	return &http.Server{
 		Handler: router,
 		Addr:    config.Address,
-	}, router
+	}
 }
