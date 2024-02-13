@@ -1,59 +1,22 @@
-package main
+package comicshelf
 
 import (
-	"fmt"
-	"html/template"
-	"log/slog"
-	"net/http"
+	"context"
 	"time"
-
-	"github.com/jakedegiovanni/comicshelf/static"
 )
 
-const ComicsEndpoint = "/marvel-unlimited/comics"
-
-type Comics struct {
-	tmpl   *template.Template
-	client *MarvelClient
-	db     *Db
-	logger *slog.Logger
+type Comic struct {
+	Name         string `json:"name"`
+	Id           int    `json:"id"`
+	Title        string `json:"title"`
+	Urls         []Url  `json:"urls"`
+	Thumbnail    string `json:"thumbnail"`
+	Format       string `json:"format"`
+	IssuerNumber int    `json:"issuer_number"`
+	Dates        []Date `json:"dates"`
 }
 
-func NewComics(tmpl *template.Template, client *MarvelClient, db *Db, logger *slog.Logger) *Comics {
-	return &Comics{
-		tmpl:   tmpl,
-		client: client,
-		db:     db,
-		logger: logger,
-	}
-}
-
-func (c *Comics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !r.URL.Query().Has("date") {
-		http.Redirect(w, r, fmt.Sprintf("/marvel-unlimited/comics?date=%s", time.Now().Format("2006-01-02")), http.StatusFound)
-		return
-	}
-
-	t, err := time.Parse("2006-01-02", r.URL.Query().Get("date"))
-	if err != nil {
-		c.logger.Error(err.Error())
-		return
-	}
-
-	resp, err := c.client.GetWeeklyComics(t)
-	if err != nil {
-		c.logger.Error("getting series collection", slog.String("err", err.Error()))
-		return
-	}
-
-	content := static.Content{
-		Date:         r.URL.Query().Get("date"),
-		PageEndpoint: ComicsEndpoint,
-		Resp:         resp,
-	}
-
-	err = c.tmpl.ExecuteTemplate(w, "index.html", content)
-	if err != nil {
-		c.logger.Error(err.Error())
-	}
+type ComicService interface {
+	GetWeeklyComics(ctx context.Context, t time.Time) (Page[Comic], error)
+	GetComic(ctx context.Context, id int) (Comic, error)
 }

@@ -1,6 +1,7 @@
-package main
+package filedb
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,33 +9,35 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/jakedegiovanni/comicshelf"
 )
 
 type Db struct {
 	file     *os.File
-	followed map[string]string
-	mu       *sync.Mutex
+	followed map[string]comicshelf.User
+	mu       *sync.RWMutex
 	quit     chan bool
 	logger   *slog.Logger
 }
 
-func NewDb(filename string, logger *slog.Logger) (*Db, error) {
+func NewDb(cfg *Config, logger *slog.Logger) (*Db, error) {
 	var f *os.File
-	var followed map[string]string
+	var followed map[string]comicshelf.User
 
-	if _, err := os.Stat(filename); err != nil {
+	if _, err := os.Stat(cfg.Filename); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
 
-		f, err = os.Create(filename)
+		f, err = os.Create(cfg.Filename)
 		if err != nil {
 			return nil, err
 		}
 
-		followed = make(map[string]string)
+		followed = make(map[string]comicshelf.User)
 	} else {
-		b, err := os.ReadFile(filename)
+		b, err := os.ReadFile(cfg.Filename)
 		if err != nil {
 			return nil, err
 		}
@@ -45,13 +48,13 @@ func NewDb(filename string, logger *slog.Logger) (*Db, error) {
 				if !errors.Is(err, io.EOF) {
 					return nil, err
 				}
-				followed = make(map[string]string)
+				followed = make(map[string]comicshelf.User)
 			}
 		} else {
-			followed = make(map[string]string)
+			followed = make(map[string]comicshelf.User)
 		}
 
-		f, err = os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+		f, err = os.OpenFile(cfg.Filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +63,7 @@ func NewDb(filename string, logger *slog.Logger) (*Db, error) {
 	db := &Db{
 		file:     f,
 		followed: followed,
-		mu:       new(sync.Mutex),
+		mu:       new(sync.RWMutex),
 		quit:     make(chan bool),
 		logger:   logger,
 	}
@@ -102,21 +105,14 @@ func (d *Db) Shutdown() {
 	d.flush()
 }
 
-func (d *Db) Follow(series, name string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.followed[series] = name
+func (d *Db) GetFollowed(ctx context.Context, id string) ([]*comicshelf.Series, error) {
+	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Unfollow(series string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	delete(d.followed, series)
+func (d *Db) Follow(ctx context.Context, series *comicshelf.Series) error {
+	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Following(series string) bool {
-	_, ok := d.followed[series]
-	return ok
+func (d *Db) Unfollow(ctx context.Context, series *comicshelf.Series) error {
+	panic("not implemented") // TODO: Implement
 }

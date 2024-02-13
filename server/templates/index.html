@@ -1,0 +1,45 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>Comicshelf</title>
+
+    <link href="/static/index.css" rel="stylesheet" />
+    <script src="/static/index.js"></script>
+
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+
+    <script src="https://unpkg.com/htmx.org@1.9.4"
+        integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+        crossorigin="anonymous"></script>
+</head>
+
+<body onload="activateNavItems()">
+    <div class="bar navbar">
+        <form method="get">
+            <label for="date">Release Week</label>
+            <input type="date" id="date" name="date" value="{{.Date}}" />
+            <button type="submit">Submit</button>
+        </form>
+
+        <div>Marvel Unlimited ComicShelf</div>
+
+        <div class="navigation">
+            <a class="nav-item" id="/comics/marvel-unlimited" href="/comics/marvel-unlimited?date={{.Date}}">Comics</a>
+            <a class="nav-item" id="/series/marvel-unlimited" href="/series/marvel-unlimited?date={{.Date}}">Series</a>
+        </div>
+    </div>
+
+    <div class="main">
+        {{template "content" .}}
+    </div>
+
+    <div class="pusher"></div>
+
+    {{ if .Resp}}
+    <div class="bar bottombar"><a href="https://marvel.com">{{.Resp.AttributionText}}</a></div>
+    {{end}}
+</body>
+
+</html>
