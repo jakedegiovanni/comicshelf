@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jakedegiovanni/comicshelf"
 	"github.com/jakedegiovanni/comicshelf/server/templates"
 )
 
@@ -22,7 +23,7 @@ func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	content := templates.View{
+	content := templates.View[[]comicshelf.Comic]{
 		Date: r.URL.Query().Get("date"),
 		Resp: resp,
 	}

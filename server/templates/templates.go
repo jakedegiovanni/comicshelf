@@ -7,7 +7,7 @@ import (
 //go:embed *
 var Files embed.FS
 
-type View struct {
+type View[T any] struct {
 	Date string
-	Resp interface{}
+	Resp T
 }

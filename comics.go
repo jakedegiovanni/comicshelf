@@ -6,7 +6,6 @@ import (
 )
 
 type Comic struct {
-	Name         string `json:"name"`
 	Id           int    `json:"id"`
 	Title        string `json:"title"`
 	Urls         []Url  `json:"urls"`
@@ -14,6 +13,7 @@ type Comic struct {
 	Format       string `json:"format"`
 	IssuerNumber int    `json:"issuer_number"`
 	Dates        []Date `json:"dates"`
+	Attribution  string `json:"attribution"`
 }
 
 type ComicService interface {

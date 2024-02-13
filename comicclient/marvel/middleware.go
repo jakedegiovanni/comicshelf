@@ -13,10 +13,10 @@ import (
 
 // todo pub/priv will need to come from a secrets manager
 
-//go:embed ..\..\pub.txt
+//go:embed pub.txt
 var pub string
 
-//go:embed ..\..\priv.txt
+//go:embed priv.txt
 var priv string
 
 func apiKeyMiddleware(logger *slog.Logger) comicclient.Middleware {
