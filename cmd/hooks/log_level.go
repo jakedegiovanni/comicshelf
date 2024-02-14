@@ -1,4 +1,4 @@
-package comicshelfconfig
+package hooks
 
 import (
 	"errors"

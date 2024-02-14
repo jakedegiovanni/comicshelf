@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	comicshelfconfig "github.com/jakedegiovanni/comicshelf/comichselfconfig"
+	"github.com/jakedegiovanni/comicshelf/cmd/hooks"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,8 +38,8 @@ func main() {
 				mapstructure.ComposeDecodeHookFunc(
 					mapstructure.StringToTimeDurationHookFunc(),
 					mapstructure.StringToSliceHookFunc(","),
-					comicshelfconfig.UrlHook(),
-					comicshelfconfig.SlogLevelHook(),
+					hooks.UrlHook(),
+					hooks.SlogLevelHook(),
 				),
 			))
 			if err != nil {
