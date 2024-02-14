@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/jakedegiovanni/comicshelf"
 	"github.com/jakedegiovanni/comicshelf/comicclient"
+	"golang.org/x/sync/errgroup"
 )
 
 type dataWrapper[T any] struct {
@@ -106,69 +109,47 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 	first, last := c.weekRange(c.marvelUnlimitedDate(t))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(c.cfg.DateLayout), last.Format(c.cfg.DateLayout))
 
-	comics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
 	if err != nil {
 		return comicshelf.Page[comicshelf.Comic]{}, err
 	}
 
-	comics1 := comicshelf.Page[comicshelf.Comic]{
-		Total:   comics.Data.Total,
-		Limit:   comics.Data.Limit,
-		Offset:  comics.Data.Offset,
-		Count:   comics.Data.Count,
-		Results: make([]comicshelf.Comic, comics.Data.Count),
+	comics := transformPage[comic, comicshelf.Comic](marvelComics.Data)
+
+	for _, comic := range marvelComics.Data.Results {
+		comics.Results = append(comics.Results, transformComic(comic, marvelComics.AttributionText))
 	}
 
-	for _, comic := range comics.Data.Results {
-		comic1 := comicshelf.Comic{
-			Id:           comic.Id,
-			Title:        comic.Title,
-			Urls:         make([]comicshelf.Url, len(comic.Urls)),
-			Thumbnail:    "",
-			Format:       comic.Format,
-			IssuerNumber: comic.IssueNumber,
-			Dates:        make([]comicshelf.Date, len(comic.Dates)),
-			Attribution:  comics.AttributionText,
-		}
-
-		for _, uri := range comic.Urls {
-			comic1.Urls = append(comic1.Urls, comicshelf.Url{
-				Type: uri.Type,
-				Url:  uri.Url,
-			})
-		}
-
-		for _, date := range comic.Dates {
-			comic1.Dates = append(comic1.Dates, comicshelf.Date{
-				Type: date.Type,
-				Date: date.Date,
-			})
-		}
-
-		comics1.Results = append(comics1.Results, comic1)
-	}
-
-	return comics1, nil
+	return comics, nil
 }
 
 func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/comics/%d", id)
-	comic, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComic, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
 	if err != nil {
 		return comicshelf.Comic{}, err
 	}
 
-	return comicshelf.Comic{}, nil
+	if marvelComic.Data.Count == 0 {
+		return comicshelf.Comic{}, fmt.Errorf("could not find comics for id: %d", id)
+	}
+
+	return transformComic(marvelComic.Data.Results[0], marvelComic.AttributionText), nil
 }
 
 func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/series/%d/comics?format=comic&formatType=comic&noVariants=true&hasDigitalIssue=true&orderBy=issueNumber&limit=100", id)
-	comics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	comics := make([]comicshelf.Comic, marvelComics.Data.Count)
+	for _, comic := range marvelComics.Data.Results {
+		comics = append(comics, transformComic(comic, marvelComics.AttributionText))
+	}
+
+	return comics, nil
 }
 
 func (c *Client) GetSeries(ctx context.Context, id int) (comicshelf.Series, error) {
@@ -178,7 +159,11 @@ func (c *Client) GetSeries(ctx context.Context, id int) (comicshelf.Series, erro
 		return comicshelf.Series{}, err
 	}
 
-	return comicshelf.Series{}, nil
+	if series.Data.Count == 0 {
+		return comicshelf.Series{}, fmt.Errorf("could not find series with id: %d", id)
+	}
+
+	return transformSeries(ctx, series.Data.Results[0], series.AttributionText, c.GetComic)
 }
 
 func (c *Client) weekRange(t time.Time) (time.Time, time.Time) {
@@ -193,6 +178,91 @@ func (c *Client) weekRange(t time.Time) (time.Time, time.Time) {
 
 func (c *Client) marvelUnlimitedDate(t time.Time) time.Time {
 	return t.AddDate(0, c.cfg.ReleaseOffset, 0)
+}
+
+func transformPage[C, P any](data dataContainer[C]) comicshelf.Page[P] {
+	return comicshelf.Page[P]{
+		Total:   data.Total,
+		Limit:   data.Limit,
+		Offset:  data.Offset,
+		Count:   data.Count,
+		Results: make([]P, data.Count),
+	}
+}
+
+func transformSeries(ctx context.Context, series series, attribution string, getComic func(context.Context, int) (comicshelf.Comic, error)) (comicshelf.Series, error) {
+	s := comicshelf.Series{
+		Id:        series.Id,
+		Title:     series.Title,
+		Urls:      make([]comicshelf.Url, len(series.Urls)),
+		Thumbnail: "", // todo
+		Comics:    make([]comicshelf.Comic, len(series.Comics.Items)),
+	}
+
+	for _, uri := range series.Urls {
+		s.Urls = append(s.Urls, transformUrl(uri))
+	}
+
+	g := new(errgroup.Group)
+	g.SetLimit(len(series.Comics.Items))
+	for i, comic := range series.Comics.Items {
+		i, comic := i, comic // https://golang.org/doc/faq#closures_and_goroutines
+		g.Go(func() error {
+			r := regexp.MustCompile(`[0-9]+`)
+			id, err := strconv.Atoi(r.FindString(comic.ResourceURI))
+			if err != nil {
+				return err
+			}
+
+			c, err := getComic(ctx, id)
+			if err != nil {
+				return err
+			}
+
+			s.Comics[i] = c
+			return nil
+		})
+	}
+
+	err := g.Wait()
+	if err != nil {
+		return comicshelf.Series{}, err
+	}
+
+	return s, nil
+}
+
+func transformComic(comic comic, attribution string) comicshelf.Comic {
+	c := comicshelf.Comic{
+		Id:           comic.Id,
+		Title:        comic.Title,
+		Urls:         make([]comicshelf.Url, len(comic.Urls)),
+		Thumbnail:    "", // todo
+		Format:       comic.Format,
+		IssuerNumber: comic.IssueNumber,
+		Dates:        make([]comicshelf.Date, len(comic.Dates)),
+		Attribution:  attribution,
+	}
+
+	for _, uri := range comic.Urls {
+		c.Urls = append(c.Urls, transformUrl(uri))
+	}
+
+	for _, date := range comic.Dates {
+		c.Dates = append(c.Dates, comicshelf.Date{
+			Type: date.Type,
+			Date: date.Date,
+		})
+	}
+
+	return c
+}
+
+func transformUrl(u uri) comicshelf.Url {
+	return comicshelf.Url{
+		Type: u.Type,
+		Url:  u.Url,
+	}
 }
 
 func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.Client, logger *slog.Logger) (*dataWrapper[T], error) {

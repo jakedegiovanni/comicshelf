@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jakedegiovanni/comicshelf/static"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -45,19 +42,19 @@ func Server(v *viper.Viper) *cobra.Command {
 
 			// client := NewMarvelClient(logger)
 
-			_ = template.Must(
-				template.
-					New("marvel-unlimited").
-					Funcs(template.FuncMap{
-						"contains": func(s1, s2 string) bool {
-							return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
-						},
-						"equals": strings.EqualFold,
-						// "following": db.Following,
-						// "marvelUnlimitedDate": DateResponseToMarvelUnlimitedDate,
-					}).
-					ParseFS(static.Files, "index.html", "marvel-unlimited.html", "comic-card.html", "follow.html", "unfollow.html"),
-			)
+			// _ = template.Must(
+			// 	template.
+			// 		New("marvel-unlimited").
+			// 		Funcs(template.FuncMap{
+			// 			"contains": func(s1, s2 string) bool {
+			// 				return strings.Contains(strings.ToLower(s1), strings.ToLower(s2))
+			// 			},
+			// 			"equals": strings.EqualFold,
+			// 			// "following": db.Following,
+			// 			// "marvelUnlimitedDate": DateResponseToMarvelUnlimitedDate,
+			// 		}).
+			// 		ParseFS(static.Files, "index.html", "marvel-unlimited.html", "comic-card.html", "follow.html", "unfollow.html"),
+			// )
 
 			// comics := NewComics(tmpl, client, db, logger)
 			// series := NewSeries(tmpl, client, db, logger)
@@ -72,7 +69,7 @@ func Server(v *viper.Viper) *cobra.Command {
 			// router.Get(SeriesEndpoint, series.ServeHTTP)
 			// router.Post(TrackEndpoint, api.Track)
 
-			router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
+			// router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
 
 			srv := &http.Server{
 				Handler: router,
