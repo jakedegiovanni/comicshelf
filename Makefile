@@ -23,6 +23,10 @@ build: clean
 run:
 	go run . server
 
+.PHONY: run-cli
+run-cli:
+	go run ./cmd/comicshelf $(ARGS)
+
 .PHONY: test
 test:
 	go test -v ./...

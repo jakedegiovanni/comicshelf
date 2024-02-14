@@ -89,7 +89,7 @@ type Client struct {
 
 func New(cfg *Config, logger *slog.Logger) *Client {
 	return &Client{
-		client: comicclient.NewClient(nil, comicclient.MiddlewareChain(
+		client: comicclient.NewClient(&cfg.Client, comicclient.MiddlewareChain(
 			comicclient.AddBaseMiddleware(logger, &cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
 			apiKeyMiddleware(logger),
 		)),
@@ -144,7 +144,7 @@ func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshel
 		return nil, err
 	}
 
-	comics := make([]comicshelf.Comic, marvelComics.Data.Count)
+	comics := make([]comicshelf.Comic, 0, marvelComics.Data.Count)
 	for _, comic := range marvelComics.Data.Results {
 		comics = append(comics, transformComic(comic, marvelComics.AttributionText))
 	}
@@ -186,7 +186,7 @@ func transformPage[C, P any](data dataContainer[C]) comicshelf.Page[P] {
 		Limit:   data.Limit,
 		Offset:  data.Offset,
 		Count:   data.Count,
-		Results: make([]P, data.Count),
+		Results: make([]P, 0, data.Count),
 	}
 }
 
@@ -194,9 +194,9 @@ func transformSeries(ctx context.Context, series series, attribution string, get
 	s := comicshelf.Series{
 		Id:        series.Id,
 		Title:     series.Title,
-		Urls:      make([]comicshelf.Url, len(series.Urls)),
+		Urls:      make([]comicshelf.Url, 0, len(series.Urls)),
 		Thumbnail: "", // todo
-		Comics:    make([]comicshelf.Comic, len(series.Comics.Items)),
+		Comics:    make([]comicshelf.Comic, 0, len(series.Comics.Items)),
 	}
 
 	for _, uri := range series.Urls {
@@ -236,11 +236,11 @@ func transformComic(comic comic, attribution string) comicshelf.Comic {
 	c := comicshelf.Comic{
 		Id:           comic.Id,
 		Title:        comic.Title,
-		Urls:         make([]comicshelf.Url, len(comic.Urls)),
+		Urls:         make([]comicshelf.Url, 0, len(comic.Urls)),
 		Thumbnail:    "", // todo
 		Format:       comic.Format,
 		IssuerNumber: comic.IssueNumber,
-		Dates:        make([]comicshelf.Date, len(comic.Dates)),
+		Dates:        make([]comicshelf.Date, 0, len(comic.Dates)),
 		Attribution:  attribution,
 	}
 
