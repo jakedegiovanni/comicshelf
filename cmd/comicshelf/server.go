@@ -9,6 +9,8 @@ import (
 )
 
 func serverCmd(v *viper.Viper) *cobra.Command {
+	// todo viper config
+
 	server := &cobra.Command{
 		Use: "server",
 		RunE: func(cmd *cobra.Command, args []string) error {
