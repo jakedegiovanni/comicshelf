@@ -1,21 +1,20 @@
-package config
+package comicshelfconfig
 
 import (
 	"errors"
-	"fmt"
-	"net/url"
+	"log/slog"
 	"reflect"
 
 	"github.com/mitchellh/mapstructure"
 )
 
-func UrlHook() mapstructure.DecodeHookFuncType {
+func SlogLevelHook() mapstructure.DecodeHookFuncType {
 	return func(src, target reflect.Type, data interface{}) (interface{}, error) {
 		if src.Kind() != reflect.String {
 			return data, nil
 		}
 
-		if target != reflect.TypeOf(url.URL{}) {
+		if target != reflect.TypeOf(slog.Level(0)) {
 			return data, nil
 		}
 
@@ -24,13 +23,8 @@ func UrlHook() mapstructure.DecodeHookFuncType {
 			return nil, errors.New("could not cast decode source to string")
 		}
 
-		// todo: empty url
-
-		u, err := url.Parse(dat)
-		if err != nil {
-			return nil, fmt.Errorf("could not parse url for config decoding: %w", err)
-		}
-
-		return *u, nil
+		var lvl slog.Level
+		err := lvl.UnmarshalText([]byte(dat))
+		return lvl, err
 	}
 }

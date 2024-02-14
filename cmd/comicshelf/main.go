@@ -1,41 +1,67 @@
 package main
 
 import (
-	"log/slog"
-	"net/url"
-	"os"
-	"time"
+	"errors"
+	"fmt"
 
-	"github.com/jakedegiovanni/comicshelf/comicclient"
-	"github.com/jakedegiovanni/comicshelf/comicclient/marvel"
+	comicshelfconfig "github.com/jakedegiovanni/comicshelf/comichselfconfig"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func main() {
+	cfg := defaultConfig()
 	v := viper.New()
 
 	rootCmd := &cobra.Command{
 		Use: "comicshelf",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cfg.File != "" {
+				v.SetConfigFile(cfg.File)
+			} else {
+				v.SetConfigName("config")
+				v.SetConfigType("yml")
+				v.AddConfigPath(".")
+			}
+
+			err := v.ReadInConfig()
+			if err != nil {
+				var notFound viper.ConfigFileNotFoundError
+				if !errors.As(err, &notFound) {
+					return fmt.Errorf("could not read config: %w", err)
+				}
+			}
+
+			var cfg config
+			err = v.Unmarshal(&cfg, viper.DecodeHook(
+				mapstructure.ComposeDecodeHookFunc(
+					mapstructure.StringToTimeDurationHookFunc(),
+					mapstructure.StringToSliceHookFunc(","),
+					comicshelfconfig.UrlHook(),
+					comicshelfconfig.SlogLevelHook(),
+				),
+			))
+			if err != nil {
+				return err
+			}
+
+			putConfigIntoCtx(cmd, &cfg)
+			return nil
+		},
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
-	}))
+	rootCmd.PersistentFlags().StringVarP(&cfg.File, "config", "c", cfg.File, "if not present will check for existence of config.yml in current directory. If none present will be ignored.")
 
-	marvelBaseUri, _ := url.Parse("https://gateway.marvel.com/v1/public")
-	marvelSvc := marvel.New(&marvel.Config{
-		Client: comicclient.Config{
-			Timeout: 20 * time.Second,
-			BaseURL: *marvelBaseUri,
-		},
-		DateLayout:    "2006-01-02",
-		ReleaseOffset: -3,
-	}, logger)
+	var logLvl string
+	rootCmd.PersistentFlags().StringVarP(&logLvl, "loglevel", "l", cfg.Logger.Level.String(), "DEBUG|INFO|WARN|ERROR")
+	_ = v.BindPFlag("logger.level", rootCmd.PersistentFlags().Lookup("loglevel"))
+
+	rootCmd.PersistentFlags().BoolVarP(&cfg.Logger.Disabled, "silent", "", cfg.Logger.Disabled, "disable logging")
+	_ = v.BindPFlag("logging.disabled", rootCmd.PersistentFlags().Lookup("silent"))
 
 	rootCmd.AddCommand(serverCmd(v))
-	rootCmd.AddCommand(marvelCmd(v, marvelSvc))
+	rootCmd.AddCommand(marvelCmd(v))
 
 	cobra.CheckErr(rootCmd.Execute())
 }

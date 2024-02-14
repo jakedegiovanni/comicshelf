@@ -21,7 +21,7 @@ build: clean
 
 .PHONY: run
 run:
-	go run . server
+	go run ./cmd/comicshelf server
 
 .PHONY: run-cli
 run-cli:

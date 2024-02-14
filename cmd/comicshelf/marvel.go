@@ -8,19 +8,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-func marvelCmd(v *viper.Viper, svc *marvel.Client) *cobra.Command {
+func marvelCmd(v *viper.Viper) *cobra.Command {
 
-	marvel := &cobra.Command{
-		Use: "marvel",
-	}
-
-	weekly := &cobra.Command{
-		Use: "weekly",
-	}
+	// todo - configure through viper
 
 	today := &cobra.Command{
 		Use: "today",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := getConfigFromCtx(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			svc := marvel.New(&cfg.Marvel, cfg.Logger.Slog())
+
 			comics, err := svc.GetWeeklyComics(cmd.Context(), time.Now())
 			if err != nil {
 				return err
@@ -30,8 +31,14 @@ func marvelCmd(v *viper.Viper, svc *marvel.Client) *cobra.Command {
 		},
 	}
 
+	weekly := &cobra.Command{
+		Use: "weekly",
+	}
 	weekly.AddCommand(today)
 
+	marvel := &cobra.Command{
+		Use: "marvel",
+	}
 	marvel.AddCommand(weekly)
 
 	return marvel

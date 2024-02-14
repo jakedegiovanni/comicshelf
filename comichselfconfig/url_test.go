@@ -1,4 +1,4 @@
-package config
+package comicshelfconfig
 
 import (
 	"net/url"

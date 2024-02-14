@@ -15,6 +15,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var _ comicshelf.ComicService = (*Client)(nil)
+var _ comicshelf.SeriesService = (*Client)(nil)
+
 type dataWrapper[T any] struct {
 	Code            interface{}      `json:"code"`
 	Status          string           `json:"status"`
@@ -90,7 +93,7 @@ type Client struct {
 func New(cfg *Config, logger *slog.Logger) *Client {
 	return &Client{
 		client: comicclient.NewClient(&cfg.Client, comicclient.MiddlewareChain(
-			comicclient.AddBaseMiddleware(logger, &cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
+			comicclient.AddBaseMiddleware(logger, cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
 			apiKeyMiddleware(logger),
 		)),
 		logger:      logger,
@@ -195,7 +198,7 @@ func transformSeries(ctx context.Context, series series, attribution string, get
 		Id:        series.Id,
 		Title:     series.Title,
 		Urls:      make([]comicshelf.Url, 0, len(series.Urls)),
-		Thumbnail: "", // todo
+		Thumbnail: fmt.Sprintf("%s/portrait_uncanny.%s", series.Thumbnail.Path, series.Thumbnail.Extension),
 		Comics:    make([]comicshelf.Comic, 0, len(series.Comics.Items)),
 	}
 
@@ -237,7 +240,7 @@ func transformComic(comic comic, attribution string) comicshelf.Comic {
 		Id:           comic.Id,
 		Title:        comic.Title,
 		Urls:         make([]comicshelf.Url, 0, len(comic.Urls)),
-		Thumbnail:    "", // todo
+		Thumbnail:    fmt.Sprintf("%s/portrait_uncanny.%s", comic.Thumbnail.Path, comic.Thumbnail.Extension),
 		Format:       comic.Format,
 		IssuerNumber: comic.IssueNumber,
 		Dates:        make([]comicshelf.Date, 0, len(comic.Dates)),

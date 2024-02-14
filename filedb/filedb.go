@@ -13,6 +13,8 @@ import (
 	"github.com/jakedegiovanni/comicshelf"
 )
 
+var _ comicshelf.UserService = (*Db)(nil)
+
 type Db struct {
 	file     *os.File
 	followed map[string]comicshelf.User
@@ -21,7 +23,7 @@ type Db struct {
 	logger   *slog.Logger
 }
 
-func NewDb(cfg *Config, logger *slog.Logger) (*Db, error) {
+func New(cfg *Config, logger *slog.Logger) (*Db, error) {
 	var f *os.File
 	var followed map[string]comicshelf.User
 
@@ -105,14 +107,14 @@ func (d *Db) Shutdown() {
 	d.flush()
 }
 
-func (d *Db) GetFollowed(ctx context.Context, id string) ([]*comicshelf.Series, error) {
+func (d *Db) Followed(ctx context.Context, id string) ([]comicshelf.Series, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Follow(ctx context.Context, series *comicshelf.Series) error {
+func (d *Db) Follow(ctx context.Context, series comicshelf.Series) error {
 	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Unfollow(ctx context.Context, series *comicshelf.Series) error {
+func (d *Db) Unfollow(ctx context.Context, series comicshelf.Series) error {
 	panic("not implemented") // TODO: Implement
 }

@@ -7,5 +7,5 @@ import (
 
 type Config struct {
 	Timeout time.Duration `mapstructure:"timeout"`
-	BaseURL url.URL       `mapstructure:"base_url"`
+	BaseURL *url.URL      `mapstructure:"base_url"`
 }

@@ -27,9 +27,15 @@ type Server struct {
 	tmpl   *template.Template
 	comics comicshelf.ComicService
 	series comicshelf.SeriesService
+	user   comicshelf.UserService
 }
 
-func NewServer(config *Config, logger *slog.Logger) *Server {
+func New(
+	config *Config, logger *slog.Logger,
+	comics comicshelf.ComicService,
+	series comicshelf.SeriesService,
+	user comicshelf.UserService,
+) *Server {
 	router := chi.NewRouter()
 
 	srv := &http.Server{
@@ -49,6 +55,9 @@ func NewServer(config *Config, logger *slog.Logger) *Server {
 		srv:    srv,
 		logger: logger,
 		tmpl:   tmpl,
+		comics: comics,
+		series: series,
+		user:   user,
 	}
 
 	router.Use(serverLogger(logger))
@@ -72,7 +81,6 @@ func NewServer(config *Config, logger *slog.Logger) *Server {
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	// defer db shutdown in level above
 	defer s.handlePanic()
 
 	g := new(errgroup.Group)
