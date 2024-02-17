@@ -1,5 +1,4 @@
 {{define "comic-card"}}
-<!-- if not (contains .Title "Variant") -->
 <div id="{{.Id}}" class="container">
     <img src="{{.Thumbnail}}" alt="img" />
     <form>
@@ -7,7 +6,7 @@
             <h3><a href="series?series={{.SeriesId}}">{{.Title}}</a></h3>
         </div>
 
-        <button type="submit" name="key" value="{{.SeriesId}}" hx-post="/api/track">
+        <button type="submit" name="series" value="{{.SeriesId}}" hx-post="/api/track">
             <!-- if following $resourceUri -->
             <!-- {{template "unfollow"}} -->
             <!-- else -->
