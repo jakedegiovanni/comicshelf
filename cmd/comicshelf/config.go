@@ -13,7 +13,7 @@ import (
 	"github.com/jakedegiovanni/comicshelf/comicclient/marvel"
 	"github.com/jakedegiovanni/comicshelf/filedb"
 	"github.com/jakedegiovanni/comicshelf/server"
-	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type ctxKey struct{ key string }
@@ -28,8 +28,20 @@ type config struct {
 	Logger LoggingConfig `mapstructure:"logger"`
 }
 
-func defaultConfig() config {
+func defaultConfig(v *viper.Viper) config {
 	marvelBaseUri, _ := url.Parse("https://gateway.marvel.com/v1/public")
+
+	v.Set("logger.level", slog.LevelDebug.String())
+	v.Set("logger.disabled", false)
+
+	v.Set("filedb.filename", "db.json")
+
+	v.Set("server.address", "127.0.0.1:8080")
+
+	v.Set("marvel.client.timeout", "20s")
+	v.Set("marvel.client.base_url", marvelBaseUri.String())
+	v.Set("marvel.date_layout", "2006-01-02")
+	v.Set("marvel.release_offset", -3)
 
 	return config{
 		Marvel: marvel.Config{
@@ -75,11 +87,6 @@ func (l LoggingConfig) Slog() *slog.Logger {
 	}))
 
 	return logger
-}
-
-func putConfigIntoCtx(cmd *cobra.Command, cfg *config) {
-	ctx := context.WithValue(cmd.Context(), cfgCtxKey, &cfg)
-	cmd.SetContext(ctx)
 }
 
 func getConfigFromCtx(ctx context.Context) (*config, error) {

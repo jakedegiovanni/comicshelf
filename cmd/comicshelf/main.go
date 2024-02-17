@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -11,8 +12,8 @@ import (
 )
 
 func main() {
-	cfg := defaultConfig()
 	v := viper.New()
+	cfg := defaultConfig(v)
 
 	rootCmd := &cobra.Command{
 		Use: "comicshelf",
@@ -46,7 +47,8 @@ func main() {
 				return err
 			}
 
-			putConfigIntoCtx(cmd, &cfg)
+			ctx := context.WithValue(cmd.Context(), cfgCtxKey, &cfg)
+			cmd.SetContext(ctx)
 			return nil
 		},
 	}
