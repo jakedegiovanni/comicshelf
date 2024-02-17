@@ -50,6 +50,16 @@ func New(
 			New("comicshelf").
 			Funcs(template.FuncMap{
 				"equals": strings.EqualFold,
+				"following": func(userId, seriesId int) bool {
+					// todo this shouldn't stay here when an actual db connection, don't want to be calling sequentially during template render
+					f, err := user.Following(context.TODO(), userId, seriesId)
+					if err != nil {
+						slog.Error(err.Error())
+						return false
+					}
+					slog.Debug(fmt.Sprintf("%+v", f))
+					return f
+				},
 			}).
 			ParseFS(templates.Files, "*.html"),
 	)

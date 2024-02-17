@@ -6,13 +6,13 @@
             <h3><a href="series?series={{.SeriesId}}">{{.Title}}</a></h3>
         </div>
 
-        <button type="submit" name="series" value="{{.SeriesId}}" hx-post="/api/track">
-            <!-- if following $resourceUri -->
-            <!-- {{template "unfollow"}} -->
-            <!-- else -->
-            {{template "follow"}}
-            <!-- end -->
-        </button>
+        <input type="hidden" name="series" value="{{.SeriesId}}" />
+
+        {{ if following 0 .SeriesId }}
+        {{template "unfollow"}}
+        {{ else }}
+        {{template "follow"}}
+        {{ end }}
         <div class="pusher"></div>
         <div class="marvel-links">{{.OnSaleDate}}</div>
         {{range .Urls}}

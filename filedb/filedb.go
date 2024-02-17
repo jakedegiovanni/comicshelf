@@ -16,6 +16,8 @@ import (
 
 var _ comicshelf.UserService = (*Db)(nil)
 
+var errUserNotFound = errors.New("user not found")
+
 type Db struct {
 	file     *os.File
 	followed map[int]comicshelf.User
@@ -38,6 +40,7 @@ func New(cfg *Config) (*Db, error) {
 		}
 
 		followed = make(map[int]comicshelf.User)
+		followed[0] = comicshelf.User{Id: 0, Following: make(comicshelf.Set[int])} // todo - onboarding process
 	} else {
 		b, err := os.ReadFile(cfg.Filename)
 		if err != nil {
@@ -51,9 +54,11 @@ func New(cfg *Config) (*Db, error) {
 					return nil, err
 				}
 				followed = make(map[int]comicshelf.User)
+				followed[0] = comicshelf.User{Id: 0, Following: make(comicshelf.Set[int])} // todo - onboarding process
 			}
 		} else {
 			followed = make(map[int]comicshelf.User)
+			followed[0] = comicshelf.User{Id: 0, Following: make(comicshelf.Set[int])} // todo - onboarding process
 		}
 
 		f, err = os.OpenFile(cfg.Filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
@@ -106,41 +111,43 @@ func (d *Db) Shutdown() {
 	d.flush()
 }
 
-func (d *Db) Followed(ctx context.Context, userId int) ([]comicshelf.Series, error) {
+func (d *Db) Following(ctx context.Context, userId, seriesId int) (bool, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	user, err := d.getUser(userId)
 	if err != nil {
-		return []comicshelf.Series{}, err
+		return false, err
 	}
 
-	following := make([]comicshelf.Series, 0, len(user.Following))
-	for _, series := range user.Following {
-		following = append(following, series)
+	return user.Following.Has(seriesId), nil
+}
+
+func (d *Db) Followed(ctx context.Context, userId int) (comicshelf.Set[int], error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	user, err := d.getUser(userId)
+	if err != nil {
+		return comicshelf.Set[int]{}, err
 	}
 
-	return following, nil
+	return user.Following, nil
 }
 
 func (d *Db) Follow(ctx context.Context, userId, seriesId int) error {
 	d.mu.Lock()
-	defer d.mu.Lock()
+	defer d.mu.Unlock()
 
 	user, err := d.getUser(userId)
 	if err != nil {
 		return err
 	}
 
-	if series, ok := user.Following[seriesId]; !ok {
-		user.Following[seriesId] = comicshelf.Series{Id: seriesId}
-		d.followed[userId] = user
-	} else {
-		series.Id = seriesId
-		user.Following[seriesId] = series
-		d.followed[userId] = user
-	}
+	user.Following.Put(seriesId)
+	d.followed[userId] = user
 
+	slog.Debug(fmt.Sprintf("%+v", d.followed))
 	return nil
 }
 
@@ -153,7 +160,7 @@ func (d *Db) Unfollow(ctx context.Context, userId, seriesId int) error {
 		return err
 	}
 
-	delete(user.Following, seriesId)
+	user.Following.Delete(seriesId)
 	d.followed[userId] = user
 	return nil
 }
@@ -161,7 +168,7 @@ func (d *Db) Unfollow(ctx context.Context, userId, seriesId int) error {
 func (d *Db) getUser(userId int) (comicshelf.User, error) {
 	user, ok := d.followed[userId]
 	if !ok {
-		return comicshelf.User{}, fmt.Errorf("no user with id: %d", userId)
+		return comicshelf.User{}, fmt.Errorf("no user with id: %d - %w", userId, errUserNotFound)
 	}
 
 	return user, nil

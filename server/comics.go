@@ -22,7 +22,7 @@ func (s *Server) handleMarvelUnlimitedComics(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	resp, err := s.comics.GetWeeklyComics(r.Context(), t)
+	comics, err := s.comics.GetWeeklyComics(r.Context(), t)
 	if err != nil {
 		slog.Error("getting series collection", slog.String("err", err.Error()))
 		return
@@ -30,7 +30,7 @@ func (s *Server) handleMarvelUnlimitedComics(w http.ResponseWriter, r *http.Requ
 
 	content := templates.View[comicshelf.Page[comicshelf.Comic]]{
 		Date: r.URL.Query().Get("date"),
-		Resp: resp,
+		Resp: comics,
 	}
 
 	err = s.tmpl.ExecuteTemplate(w, "index.html", content)

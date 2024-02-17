@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Server) registerUserRoutes(router chi.Router) {
-	router.Post("/api/follow", s.registerFollow)
-	router.Post("/api/unfollow", s.registerUnfollow)
+	router.Post("/follow", s.registerFollow)
+	router.Post("/unfollow", s.registerUnfollow)
 }
 
 func (s *Server) registerFollow(w http.ResponseWriter, r *http.Request) {
@@ -21,6 +21,7 @@ func (s *Server) registerFollow(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("could not extract series id: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
+	slog.Debug(fmt.Sprintf("%d", id))
 
 	err = s.user.Follow(r.Context(), 0, id) // using default user id until auth actually implemented
 	if err != nil {
@@ -30,7 +31,7 @@ func (s *Server) registerFollow(w http.ResponseWriter, r *http.Request) {
 
 	err = s.tmpl.ExecuteTemplate(w, "unfollow", nil)
 	if err != nil {
-		slog.Warn("error writing follow", slog.String("err", err.Error()))
+		slog.Warn("error writing unfollow", slog.String("err", err.Error()))
 	}
 }
 
