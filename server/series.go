@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jakedegiovanni/comicshelf"
@@ -17,8 +18,14 @@ func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Requ
 	slog.Debug(r.URL.String())
 	slog.Debug(r.URL.Query().Get("series"))
 
-	// resp, err := s.series.GetComicsWithinSeries(r.Context(), r.URL.Query().Get("series"))
-	resp, err := s.series.GetComicsWithinSeries(r.Context(), 0)
+	series := r.URL.Query().Get("series")
+	id, err := strconv.Atoi(series)
+	if err != nil {
+		http.Error(w, "series query is not a number", http.StatusUnprocessableEntity)
+		return
+	}
+
+	resp, err := s.series.GetComicsWithinSeries(r.Context(), id)
 	if err != nil {
 		slog.Error(err.Error())
 		return

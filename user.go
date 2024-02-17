@@ -3,12 +3,12 @@ package comicshelf
 import "context"
 
 type User struct {
-	Id        string   `json:"id"`
-	Following []Series `json:"following"`
+	Id        int            `json:"id"`
+	Following map[int]Series `json:"following"`
 }
 
 type UserService interface {
-	Followed(ctx context.Context) ([]Series, error)
-	Follow(ctx context.Context, seriesId string) error
-	Unfollow(ctx context.Context, seriesId string) error
+	Followed(ctx context.Context, userId int) ([]Series, error)
+	Follow(ctx context.Context, userId, seriesId int) error
+	Unfollow(ctx context.Context, userId, seriesId int) error
 }
