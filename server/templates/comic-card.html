@@ -1,37 +1,25 @@
 {{define "comic-card"}}
-{{ if not (contains .Title "Variant") }}
-    {{ $resourceUri := .Series.ResourceURI }}
-    <div id="{{.Id}}" class="container">
-        <img src="{{.Thumbnail.Path}}/portrait_uncanny.{{.Thumbnail.Extension}}" alt="img"/>
-        <form>
-            <div class="title"><h3>{{.Title}}</h3></div>
-            
-            <input type="hidden" name="name" value="{{.Series.Name}}" />
-            <button type="submit" name="key" value="{{$resourceUri}}" hx-post="/api/track">
-            {{ if following $resourceUri }}
-                {{template "unfollow"}}
-            {{else}}
-                {{template "follow"}}
-            {{end}}
-            </button>
-            <div class="pusher"></div>
-            <div class="marvel-links"><a href="series?series={{$resourceUri}}">{{.Series.Name}}</a></div>
-            {{range .Dates}}
-                {{if equals .Type "onsaleDate"}}
-                    <div class="marvel-links">{{marvelUnlimitedDate .Date}}</div>
-                {{end}}
-            {{end}}
-            {{range .Urls}}
-                {{if equals .Type "detail"}}
-                    <div class="marvel-links"><a href="{{.Url}}" target="_blank">Details</a></div>
-                {{end}}
-            {{end}}
-            {{range .Urls}}
-                {{if equals .Type "reader"}}
-                    <div class="marvel-links"><a href="{{.Url}}" target="_blank">Reader</a></div>
-                {{end}}
-            {{end}}
-        </form>
-    </div>
-{{end}}
+<!-- if not (contains .Title "Variant") -->
+<div id="{{.Id}}" class="container">
+    <img src="{{.Thumbnail}}" alt="img" />
+    <form>
+        <div class="title">
+            <h3><a href="series?series={{.SeriesId}}">{{.Title}}</a></h3>
+        </div>
+
+        <button type="submit" name="key" value="{{.SeriesId}}" hx-post="/api/track">
+            <!-- if following $resourceUri -->
+            <!-- {{template "unfollow"}} -->
+            <!-- else -->
+            {{template "follow"}}
+            <!-- end -->
+        </button>
+        <div class="pusher"></div>
+        <div class="marvel-links">{{.OnSaleDate}}</div>
+        {{range .Urls}}
+        <div class="marvel-links"><a href="{{.Url}}" target="_blank">{{.Type}}</a></div>
+        {{end}}
+        <div class="marvel-links"><a href="https://marvel.com">{{.Attribution}}</a></div>
+    </form>
+</div>
 {{end}}

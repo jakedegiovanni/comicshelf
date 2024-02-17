@@ -8,7 +8,7 @@ type User struct {
 }
 
 type UserService interface {
-	Followed(ctx context.Context, id string) ([]Series, error)
-	Follow(ctx context.Context, series Series) error
-	Unfollow(ctx context.Context, series Series) error
+	Followed(ctx context.Context) ([]Series, error)
+	Follow(ctx context.Context, seriesId string) error
+	Unfollow(ctx context.Context, seriesId string) error
 }

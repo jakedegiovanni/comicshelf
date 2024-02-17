@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 func serverLogger(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -14,6 +15,23 @@ func serverLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			logger.Info(url, slog.String("method", method))
 
 			next.ServeHTTP(w, r) // todo log response code
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func queryDate(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			if !r.URL.Query().Has("date") {
+				query := r.URL.Query()
+				query.Set("date", time.Now().Format(justTheDateFormat))
+				r.URL.RawQuery = query.Encode()
+
+				http.Redirect(w, r, r.URL.String(), http.StatusFound)
+				return
+			}
+			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
 	}

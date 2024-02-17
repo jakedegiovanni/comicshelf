@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jakedegiovanni/comicshelf"
@@ -120,7 +121,11 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 	comics := transformPage[comic, comicshelf.Comic](marvelComics.Data)
 
 	for _, comic := range marvelComics.Data.Results {
-		comics.Results = append(comics.Results, transformComic(comic, marvelComics.AttributionText))
+		com, err := transformComic(comic, marvelComics.AttributionText)
+		if err != nil {
+			return comicshelf.Page[comicshelf.Comic]{}, err
+		}
+		comics.Results = append(comics.Results, com)
 	}
 
 	return comics, nil
@@ -137,7 +142,7 @@ func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error)
 		return comicshelf.Comic{}, fmt.Errorf("could not find comics for id: %d", id)
 	}
 
-	return transformComic(marvelComic.Data.Results[0], marvelComic.AttributionText), nil
+	return transformComic(marvelComic.Data.Results[0], marvelComic.AttributionText)
 }
 
 func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshelf.Comic, error) {
@@ -149,7 +154,11 @@ func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshel
 
 	comics := make([]comicshelf.Comic, 0, marvelComics.Data.Count)
 	for _, comic := range marvelComics.Data.Results {
-		comics = append(comics, transformComic(comic, marvelComics.AttributionText))
+		com, err := transformComic(comic, marvelComics.AttributionText)
+		if err != nil {
+			return []comicshelf.Comic{}, nil
+		}
+		comics = append(comics, com)
 	}
 
 	return comics, nil
@@ -211,8 +220,7 @@ func transformSeries(ctx context.Context, series series, attribution string, get
 	for i, comic := range series.Comics.Items {
 		i, comic := i, comic // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			r := regexp.MustCompile(`[0-9]+`)
-			id, err := strconv.Atoi(r.FindString(comic.ResourceURI))
+			id, err := extractId(comic.ResourceURI)
 			if err != nil {
 				return err
 			}
@@ -235,7 +243,7 @@ func transformSeries(ctx context.Context, series series, attribution string, get
 	return s, nil
 }
 
-func transformComic(comic comic, attribution string) comicshelf.Comic {
+func transformComic(comic comic, attribution string) (comicshelf.Comic, error) {
 	c := comicshelf.Comic{
 		Id:           comic.Id,
 		Title:        comic.Title,
@@ -243,22 +251,28 @@ func transformComic(comic comic, attribution string) comicshelf.Comic {
 		Thumbnail:    fmt.Sprintf("%s/portrait_uncanny.%s", comic.Thumbnail.Path, comic.Thumbnail.Extension),
 		Format:       comic.Format,
 		IssuerNumber: comic.IssueNumber,
-		Dates:        make([]comicshelf.Date, 0, len(comic.Dates)),
 		Attribution:  attribution,
 	}
+
+	seriesId, err := extractId(comic.Series.ResourceURI)
+	if err != nil {
+		return comicshelf.Comic{}, err
+	}
+	c.SeriesId = seriesId
 
 	for _, uri := range comic.Urls {
 		c.Urls = append(c.Urls, transformUrl(uri))
 	}
 
 	for _, date := range comic.Dates {
-		c.Dates = append(c.Dates, comicshelf.Date{
-			Type: date.Type,
-			Date: date.Date,
-		})
+		if !strings.EqualFold(strings.ToLower(date.Type), "onsaledate") {
+			continue
+		}
+
+		c.OnSaleDate = date.Date
 	}
 
-	return c
+	return c, nil
 }
 
 func transformUrl(u uri) comicshelf.Url {
@@ -266,6 +280,21 @@ func transformUrl(u uri) comicshelf.Url {
 		Type: u.Type,
 		Url:  u.Url,
 	}
+}
+
+func extractId(s string) (int, error) {
+	r := regexp.MustCompile(`/([0-9]+)/?`)
+	matches := r.FindStringSubmatch(s)
+	for i := len(matches) - 1; i >= 0; i-- {
+		id, err := strconv.Atoi(matches[i])
+		if err != nil {
+			continue
+		}
+
+		return id, nil
+	}
+
+	return 0, fmt.Errorf("could not extract a valid id from: %s", s)
 }
 
 func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.Client, logger *slog.Logger) (*dataWrapper[T], error) {

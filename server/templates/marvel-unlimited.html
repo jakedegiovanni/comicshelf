@@ -1,7 +1,7 @@
 {{define "content"}}
-    <base href="/marvel-unlimited/" />
+<base href="/marvel-unlimited/" />
 
-    {{range .Resp.Data.Results}}
-        {{template "comic-card" .}}
-    {{end}}
+{{range .Resp.Results}}
+{{template "comic-card" .}}
+{{end}}
 {{end}}

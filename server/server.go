@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -19,6 +20,8 @@ import (
 	"github.com/jakedegiovanni/comicshelf/server/templates"
 	"golang.org/x/sync/errgroup"
 )
+
+const justTheDateFormat = "2006-01-02"
 
 type Server struct {
 	cfg    *Config
@@ -46,7 +49,9 @@ func New(
 	tmpl := template.Must(
 		template.
 			New("comicshelf").
-			Funcs(template.FuncMap{}).
+			Funcs(template.FuncMap{
+				"equals": strings.EqualFold,
+			}).
 			ParseFS(templates.Files, "*.html"),
 	)
 
@@ -116,6 +121,7 @@ func (s *Server) Run(ctx context.Context) error {
 		return nil
 	})
 
+	s.logger.Info("server ready to accept connections", slog.String("addr", s.cfg.Address))
 	return g.Wait()
 }
 

@@ -107,14 +107,14 @@ func (d *Db) Shutdown() {
 	d.flush()
 }
 
-func (d *Db) Followed(ctx context.Context, id string) ([]comicshelf.Series, error) {
+func (d *Db) Followed(ctx context.Context) ([]comicshelf.Series, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Follow(ctx context.Context, series comicshelf.Series) error {
+func (d *Db) Follow(ctx context.Context, seriesId string) error {
 	panic("not implemented") // TODO: Implement
 }
 
-func (d *Db) Unfollow(ctx context.Context, series comicshelf.Series) error {
+func (d *Db) Unfollow(ctx context.Context, seriesId string) error {
 	panic("not implemented") // TODO: Implement
 }

@@ -11,20 +11,12 @@ import (
 )
 
 func (s *Server) registerComicRoutes(router chi.Router) {
+	router.Use(queryDate(s.logger))
 	router.Get("/marvel-unlimited", s.handleMarvelUnlimitedComics)
 }
 
 func (s *Server) handleMarvelUnlimitedComics(w http.ResponseWriter, r *http.Request) {
-	if !r.URL.Query().Has("date") {
-		query := r.URL.Query()
-		query.Set("date", time.Now().Format("2006-01-02"))
-		r.URL.RawQuery = query.Encode()
-
-		http.Redirect(w, r, r.URL.String(), http.StatusFound)
-		return
-	}
-
-	t, err := time.Parse("2006-01-02", r.URL.Query().Get("date"))
+	t, err := time.Parse(justTheDateFormat, r.URL.Query().Get("date"))
 	if err != nil {
 		s.logger.Error(err.Error())
 		return
