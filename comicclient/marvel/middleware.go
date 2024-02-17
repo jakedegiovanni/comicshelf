@@ -19,7 +19,7 @@ var pub string
 //go:embed priv.txt
 var priv string
 
-func apiKeyMiddleware(logger *slog.Logger) comicclient.Middleware {
+func apiKeyMiddleware() comicclient.Middleware {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return comicclient.MiddlewareFn(func(req *http.Request) (*http.Response, error) {
 			ts := fmt.Sprintf("%d", time.Now().UTC().Unix())
@@ -30,7 +30,7 @@ func apiKeyMiddleware(logger *slog.Logger) comicclient.Middleware {
 			query.Add("apikey", pub)
 			req.URL.RawQuery = query.Encode()
 
-			logger.Debug("api key middleware")
+			slog.Debug("api key middleware")
 			return next.RoundTrip(req)
 		})
 	}

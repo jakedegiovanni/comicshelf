@@ -26,7 +26,6 @@ const justTheDateFormat = "2006-01-02"
 type Server struct {
 	cfg    *Config
 	srv    *http.Server
-	logger *slog.Logger
 	tmpl   *template.Template
 	comics comicshelf.ComicService
 	series comicshelf.SeriesService
@@ -34,7 +33,7 @@ type Server struct {
 }
 
 func New(
-	config *Config, logger *slog.Logger,
+	config *Config,
 	comics comicshelf.ComicService,
 	series comicshelf.SeriesService,
 	user comicshelf.UserService,
@@ -58,14 +57,13 @@ func New(
 	s := &Server{
 		cfg:    config,
 		srv:    srv,
-		logger: logger,
 		tmpl:   tmpl,
 		comics: comics,
 		series: series,
 		user:   user,
 	}
 
-	router.Use(serverLogger(logger))
+	router.Use(serverLogger())
 	router.Use(middleware.Recoverer)
 
 	router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
@@ -96,9 +94,9 @@ func (s *Server) Run(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
-			s.logger.Info("programmatic shutdown")
+			slog.Info("programmatic shutdown")
 		case <-c:
-			s.logger.Info("signal shutdown")
+			slog.Info("signal shutdown")
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -114,20 +112,20 @@ func (s *Server) Run(ctx context.Context) error {
 				return nil
 			}
 
-			s.logger.Error(err.Error())
+			slog.Error(err.Error())
 			return fmt.Errorf("error starting server: %w", err)
 		}
 
 		return nil
 	})
 
-	s.logger.Info("server ready to accept connections", slog.String("addr", s.cfg.Address))
+	slog.Info("server ready to accept connections", slog.String("addr", s.cfg.Address))
 	return g.Wait()
 }
 
 func (s *Server) handlePanic() {
 	if r := recover(); r != nil {
-		s.logger.Error("recovered", slog.Any("r", r))
+		slog.Error("recovered", slog.Any("r", r))
 		debug.PrintStack()
 	}
 }

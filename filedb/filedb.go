@@ -20,10 +20,9 @@ type Db struct {
 	followed map[string]comicshelf.User
 	mu       *sync.RWMutex
 	quit     chan bool
-	logger   *slog.Logger
 }
 
-func New(cfg *Config, logger *slog.Logger) (*Db, error) {
+func New(cfg *Config) (*Db, error) {
 	var f *os.File
 	var followed map[string]comicshelf.User
 
@@ -67,7 +66,6 @@ func New(cfg *Config, logger *slog.Logger) (*Db, error) {
 		followed: followed,
 		mu:       new(sync.RWMutex),
 		quit:     make(chan bool),
-		logger:   logger,
 	}
 
 	db.timedFlush()
@@ -94,14 +92,14 @@ func (d *Db) flush() {
 
 	err := json.NewEncoder(d.file).Encode(d.followed)
 	if err != nil {
-		d.logger.Error("db save error", slog.String("err", err.Error()))
+		slog.Error("db save error", slog.String("err", err.Error()))
 		return
 	}
-	d.logger.Debug("db saved")
+	slog.Debug("db saved")
 }
 
 func (d *Db) Shutdown() {
-	d.logger.Debug("shutting down db")
+	slog.Debug("shutting down db")
 	defer d.file.Close()
 	close(d.quit)
 	d.flush()

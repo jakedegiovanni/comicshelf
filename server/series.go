@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -13,13 +14,13 @@ func (s *Server) registerSeriesRoutes(router chi.Router) {
 }
 
 func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug(r.URL.String())
-	s.logger.Debug(r.URL.Query().Get("series"))
+	slog.Debug(r.URL.String())
+	slog.Debug(r.URL.Query().Get("series"))
 
 	// resp, err := s.series.GetComicsWithinSeries(r.Context(), r.URL.Query().Get("series"))
 	resp, err := s.series.GetComicsWithinSeries(r.Context(), 0)
 	if err != nil {
-		s.logger.Error(err.Error())
+		slog.Error(err.Error())
 		return
 	}
 
@@ -30,7 +31,7 @@ func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Requ
 
 	err = s.tmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
-		s.logger.Error(err.Error())
+		slog.Error(err.Error())
 		return
 	}
 }

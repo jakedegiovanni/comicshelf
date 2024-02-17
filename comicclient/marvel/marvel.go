@@ -87,17 +87,15 @@ type Client struct {
 	client      *http.Client
 	comicCache  *Cache[dataWrapper[comic]]
 	seriesCache *Cache[dataWrapper[series]]
-	logger      *slog.Logger
 	cfg         *Config
 }
 
-func New(cfg *Config, logger *slog.Logger) *Client {
+func New(cfg *Config) *Client {
 	return &Client{
 		client: comicclient.NewClient(&cfg.Client, comicclient.MiddlewareChain(
-			comicclient.AddBaseMiddleware(logger, cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
-			apiKeyMiddleware(logger),
+			comicclient.AddBaseMiddleware(cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
+			apiKeyMiddleware(),
 		)),
-		logger:      logger,
 		cfg:         cfg,
 		comicCache:  NewCache[dataWrapper[comic]](),
 		seriesCache: NewCache[dataWrapper[series]](),
@@ -113,7 +111,7 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 	first, last := c.weekRange(c.marvelUnlimitedDate(t))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(c.cfg.DateLayout), last.Format(c.cfg.DateLayout))
 
-	marvelComics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComics, err := request[comic](endpoint, c.comicCache, c.client)
 	if err != nil {
 		return comicshelf.Page[comicshelf.Comic]{}, err
 	}
@@ -133,7 +131,7 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 
 func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/comics/%d", id)
-	marvelComic, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComic, err := request[comic](endpoint, c.comicCache, c.client)
 	if err != nil {
 		return comicshelf.Comic{}, err
 	}
@@ -147,7 +145,7 @@ func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error)
 
 func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/series/%d/comics?format=comic&formatType=comic&noVariants=true&hasDigitalIssue=true&orderBy=issueNumber&limit=100", id)
-	marvelComics, err := request[comic](endpoint, c.comicCache, c.client, c.logger)
+	marvelComics, err := request[comic](endpoint, c.comicCache, c.client)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +164,7 @@ func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshel
 
 func (c *Client) GetSeries(ctx context.Context, id int) (comicshelf.Series, error) {
 	endpoint := fmt.Sprintf("/series/%d", id)
-	series, err := request[series](endpoint, c.seriesCache, c.client, c.logger)
+	series, err := request[series](endpoint, c.seriesCache, c.client)
 	if err != nil {
 		return comicshelf.Series{}, err
 	}
@@ -297,7 +295,7 @@ func extractId(s string) (int, error) {
 	return 0, fmt.Errorf("could not extract a valid id from: %s", s)
 }
 
-func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.Client, logger *slog.Logger) (*dataWrapper[T], error) {
+func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.Client) (*dataWrapper[T], error) {
 	var resp *http.Response
 
 	if data, ok := cache.Get(endpoint); ok {
@@ -314,11 +312,11 @@ func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.
 		}
 
 		if resp.StatusCode == http.StatusNotModified {
-			logger.Debug("not modified, using cached response")
+			slog.Debug("not modified, using cached response")
 			return &data, nil
 		}
 	} else {
-		logger.Debug("item not present in cache")
+		slog.Debug("item not present in cache")
 
 		var err error
 		resp, err = client.Get(endpoint)

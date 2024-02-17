@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/jakedegiovanni/comicshelf/comicclient/marvel"
 	"github.com/jakedegiovanni/comicshelf/filedb"
 	"github.com/jakedegiovanni/comicshelf/server"
@@ -19,17 +21,17 @@ func serverCmd(v *viper.Viper) *cobra.Command {
 				return err
 			}
 
-			logger := cfg.Logger.Slog()
+			slog.SetDefault(cfg.Logger.Slog())
 
-			userSvc, err := filedb.New(&cfg.FileDB, logger)
+			userSvc, err := filedb.New(&cfg.FileDB)
 			if err != nil {
 				return err
 			}
 			defer userSvc.Shutdown()
 
-			marvelSvc := marvel.New(&cfg.Marvel, logger)
+			marvelSvc := marvel.New(&cfg.Marvel)
 
-			svc := server.New(&cfg.Server, logger, marvelSvc, marvelSvc, userSvc)
+			svc := server.New(&cfg.Server, marvelSvc, marvelSvc, userSvc)
 			return svc.Run(cmd.Context())
 		},
 	}

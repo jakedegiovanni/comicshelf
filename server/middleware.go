@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-func serverLogger(logger *slog.Logger) func(http.Handler) http.Handler {
+func serverLogger() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			method := r.Method
 			url := r.URL.String()
 
-			logger.Info(url, slog.String("method", method))
+			slog.Info(url, slog.String("method", method))
 
 			next.ServeHTTP(w, r) // todo log response code
 		}
@@ -20,10 +20,12 @@ func serverLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-func queryDate(logger *slog.Logger) func(http.Handler) http.Handler {
+func queryDate() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if !r.URL.Query().Has("date") {
+				slog.Debug("no date found in query, setting and redirecting")
+
 				query := r.URL.Query()
 				query.Set("date", time.Now().Format(justTheDateFormat))
 				r.URL.RawQuery = query.Encode()

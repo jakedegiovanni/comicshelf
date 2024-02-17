@@ -30,7 +30,7 @@ func MiddlewareChain(chain ...Middleware) Middleware {
 	}
 }
 
-func AddBaseMiddleware(logger *slog.Logger, url *url.URL) Middleware {
+func AddBaseMiddleware(url *url.URL) Middleware {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return MiddlewareFn(func(req *http.Request) (*http.Response, error) {
 			req.Host = url.Host
@@ -42,7 +42,7 @@ func AddBaseMiddleware(logger *slog.Logger, url *url.URL) Middleware {
 				req.URL.Path = u.JoinPath(req.URL.Path).Path
 			}
 
-			logger.Debug("sending to", slog.String("url", req.URL.String()))
+			slog.Debug("sending to", slog.String("url", req.URL.String()))
 			return next.RoundTrip(req)
 		})
 	}
