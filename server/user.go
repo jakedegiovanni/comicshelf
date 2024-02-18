@@ -29,7 +29,7 @@ func (s *Server) registerFollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.tmpl.ExecuteTemplate(w, "unfollow", nil)
+	err = s.comicTmpl.ExecuteTemplate(w, "unfollow", nil)
 	if err != nil {
 		slog.Warn("error writing unfollow", slog.String("err", err.Error()))
 	}
@@ -48,7 +48,7 @@ func (s *Server) registerUnfollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.tmpl.ExecuteTemplate(w, "follow", nil)
+	err = s.comicTmpl.ExecuteTemplate(w, "follow", nil)
 	if err != nil {
 		slog.Warn("error writing follow", slog.String("err", err.Error()))
 	}

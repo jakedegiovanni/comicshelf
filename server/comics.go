@@ -12,10 +12,10 @@ import (
 
 func (s *Server) registerComicRoutes(router chi.Router) {
 	router.Use(queryDate())
-	router.Get("/marvel-unlimited", s.handleMarvelUnlimitedComics)
+	router.Get("/", s.handleWeeklyComics)
 }
 
-func (s *Server) handleMarvelUnlimitedComics(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleWeeklyComics(w http.ResponseWriter, r *http.Request) {
 	t, err := time.Parse(justTheDateFormat, r.URL.Query().Get("date"))
 	if err != nil {
 		slog.Error(err.Error())
@@ -29,11 +29,12 @@ func (s *Server) handleMarvelUnlimitedComics(w http.ResponseWriter, r *http.Requ
 	}
 
 	content := templates.View[comicshelf.Page[comicshelf.Comic]]{
-		Date: r.URL.Query().Get("date"),
-		Resp: comics,
+		Date:  r.URL.Query().Get("date"),
+		Title: "Weekly Comics",
+		Resp:  comics,
 	}
 
-	err = s.tmpl.ExecuteTemplate(w, "index.html", content)
+	err = s.comicTmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
 		slog.Error(err.Error())
 	}

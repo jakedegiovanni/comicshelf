@@ -17,17 +17,14 @@
 
 <body onload="activateNavItems()">
     <div class="bar navbar">
-        <form method="get">
-            <label for="date">Release Week</label>
-            <input type="date" id="date" name="date" value="{{.Date}}" />
-            <button type="submit">Submit</button>
-        </form>
+        {{block "left-navbar" . }}
+        <div></div>
+        {{ end }}
 
-        <div>Marvel Unlimited ComicShelf</div>
+        <div>Comicshelf - {{.Title}}</div>
 
         <div class="navigation">
-            <a class="nav-item" id="/comics/marvel-unlimited" href="/comics/marvel-unlimited?date={{.Date}}">Comics</a>
-            <a class="nav-item" id="/series/marvel-unlimited" href="/series/marvel-unlimited?date={{.Date}}">Series</a>
+            <a class="nav-item" id="/comics" href="/comics">Comics</a>
         </div>
     </div>
 

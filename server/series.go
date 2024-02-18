@@ -11,15 +11,14 @@ import (
 )
 
 func (s *Server) registerSeriesRoutes(router chi.Router) {
-	router.Get("/marvel-unlimited", s.handleMarvelUnlimitedSeries)
+	router.Get("/{seriesId}", s.handleSeries)
 }
 
-func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSeries(w http.ResponseWriter, r *http.Request) {
 	slog.Debug(r.URL.String())
-	slog.Debug(r.URL.Query().Get("series"))
 
-	series := r.URL.Query().Get("series")
-	id, err := strconv.Atoi(series)
+	seriesId := chi.URLParam(r, "seriesId")
+	id, err := strconv.Atoi(seriesId)
 	if err != nil {
 		http.Error(w, "series query is not a number", http.StatusUnprocessableEntity)
 		return
@@ -32,11 +31,12 @@ func (s *Server) handleMarvelUnlimitedSeries(w http.ResponseWriter, r *http.Requ
 	}
 
 	content := templates.View[[]comicshelf.Comic]{
-		Date: r.URL.Query().Get("date"),
-		Resp: resp,
+		Date:  r.URL.Query().Get("date"),
+		Title: "Series Issues",
+		Resp:  resp,
 	}
 
-	err = s.tmpl.ExecuteTemplate(w, "index.html", content)
+	err = s.seriesTmpl.ExecuteTemplate(w, "index.html", content)
 	if err != nil {
 		slog.Error(err.Error())
 		return

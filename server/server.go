@@ -24,12 +24,13 @@ import (
 const justTheDateFormat = "2006-01-02"
 
 type Server struct {
-	cfg    *Config
-	srv    *http.Server
-	tmpl   *template.Template
-	comics comicshelf.ComicService
-	series comicshelf.SeriesService
-	user   comicshelf.UserService
+	cfg        *Config
+	srv        *http.Server
+	comicTmpl  *template.Template
+	seriesTmpl *template.Template
+	comics     comicshelf.ComicService
+	series     comicshelf.SeriesService
+	user       comicshelf.UserService
 }
 
 func New(
@@ -45,49 +46,65 @@ func New(
 		Addr:    config.Address,
 	}
 
-	tmpl := template.Must(
+	tmplFuncs := template.FuncMap{
+		"equals": strings.EqualFold,
+		"following": func(userId, seriesId int) bool {
+			// todo this shouldn't stay here when an actual db connection, don't want to be calling sequentially during template render
+			f, err := user.Following(context.TODO(), userId, seriesId)
+			if err != nil {
+				slog.Error(err.Error())
+				return false
+			}
+			slog.Debug(fmt.Sprintf("%+v", f))
+			return f
+		},
+	}
+
+	comicTmpl := template.Must(
 		template.
-			New("comicshelf").
-			Funcs(template.FuncMap{
-				"equals": strings.EqualFold,
-				"following": func(userId, seriesId int) bool {
-					// todo this shouldn't stay here when an actual db connection, don't want to be calling sequentially during template render
-					f, err := user.Following(context.TODO(), userId, seriesId)
-					if err != nil {
-						slog.Error(err.Error())
-						return false
-					}
-					slog.Debug(fmt.Sprintf("%+v", f))
-					return f
-				},
-			}).
-			ParseFS(templates.Files, "*.html"),
+			New("comicTmpl").
+			Funcs(tmplFuncs).
+			ParseFS(templates.Files, "*.html", "comics/*.html"),
+	)
+
+	seriesTmpl := template.Must(
+		template.
+			New("seriesTmpl").
+			Funcs(tmplFuncs).
+			ParseFS(templates.Files, "*.html", "series/*.html"),
 	)
 
 	s := &Server{
-		cfg:    config,
-		srv:    srv,
-		tmpl:   tmpl,
-		comics: comics,
-		series: series,
-		user:   user,
+		cfg:        config,
+		srv:        srv,
+		comicTmpl:  comicTmpl,
+		seriesTmpl: seriesTmpl,
+		comics:     comics,
+		series:     series,
+		user:       user,
 	}
 
 	router.Use(serverLogger())
 	router.Use(middleware.Recoverer)
 
-	router.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
-
-	router.Route("/comics", func(r chi.Router) {
-		s.registerComicRoutes(r)
+	router.Group(func(r chi.Router) {
+		r.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
 	})
 
-	router.Route("/series", func(r chi.Router) {
-		s.registerSeriesRoutes(r)
-	})
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.StripSlashes)
 
-	router.Route("/api", func(r chi.Router) {
-		s.registerUserRoutes(r)
+		r.Route("/comics", func(r chi.Router) {
+			s.registerComicRoutes(r)
+		})
+
+		r.Route("/series", func(r chi.Router) {
+			s.registerSeriesRoutes(r)
+		})
+
+		r.Route("/api", func(r chi.Router) {
+			s.registerUserRoutes(r)
+		})
 	})
 
 	return s

@@ -1,7 +1,6 @@
 {{define "content"}}
-<base href="/marvel-unlimited/" />
 
-{{range .Resp.Results}}
+{{range .Resp}}
 {{template "comic-card" .}}
 {{end}}
 {{end}}
