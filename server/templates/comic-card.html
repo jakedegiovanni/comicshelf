@@ -8,13 +8,9 @@
 
         <input type="hidden" name="series" value="{{.SeriesId}}" />
 
-        {{ if following 0 .SeriesId }}
-        {{template "unfollow"}}
-        {{ else }}
-        {{template "follow"}}
-        {{ end }}
+        {{block "track" .}}{{end}}
         <div class="pusher"></div>
-        <div class="marvel-links">{{.OnSaleDate}}</div>
+        <div class="marvel-links">{{justTheDate .OnSaleDate}}</div>
         {{range .Urls}}
         <div class="marvel-links"><a href="{{.Url}}" target="_blank">{{.Type}}</a></div>
         {{end}}

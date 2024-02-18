@@ -19,6 +19,22 @@ import (
 var _ comicshelf.ComicService = (*Client)(nil)
 var _ comicshelf.SeriesService = (*Client)(nil)
 
+const apiDateFormat = "2006-01-02T15:04:05-0700"
+
+type marvelTime struct {
+	time.Time
+}
+
+func (m *marvelTime) UnmarshalJSON(b []byte) error {
+	var err error
+	m.Time, err = time.Parse(apiDateFormat, strings.ReplaceAll(string(b), `"`, ""))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type dataWrapper[T any] struct {
 	Code            interface{}      `json:"code"`
 	Status          string           `json:"status"`
@@ -52,8 +68,8 @@ type uri struct {
 }
 
 type date struct {
-	Type string `json:"type"`
-	Date string `json:"date"`
+	Type string     `json:"type"`
+	Date marvelTime `json:"date"`
 }
 
 type thumbnail struct {
@@ -267,7 +283,7 @@ func transformComic(comic comic, attribution string) (comicshelf.Comic, error) {
 			continue
 		}
 
-		c.OnSaleDate = date.Date
+		c.OnSaleDate = date.Date.Time
 	}
 
 	return c, nil

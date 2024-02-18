@@ -58,6 +58,9 @@ func New(
 			slog.Debug(fmt.Sprintf("%+v", f))
 			return f
 		},
+		"justTheDate": func(t time.Time) string {
+			return t.Format(justTheDateFormat)
+		},
 	}
 
 	comicTmpl := template.Must(
