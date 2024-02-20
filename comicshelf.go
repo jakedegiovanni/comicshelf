@@ -12,8 +12,3 @@ type Url struct {
 	Type string `json:"type"`
 	Url  string `json:"url"`
 }
-
-type Date struct {
-	Type string `json:"type"`
-	Date string `json:"date"`
-}
