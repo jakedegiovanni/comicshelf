@@ -17,7 +17,7 @@ clean:
 
 .PHONY: build
 build: clean
-	go build -v -x -o bin/ .
+	go build -v -x -o bin/ ./cmd/comicshelf
 
 .PHONY: run
 run:
