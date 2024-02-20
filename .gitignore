@@ -6,6 +6,4 @@ db.json
 .idea/
 *.iml
 
-.vscode/
-
 target/
