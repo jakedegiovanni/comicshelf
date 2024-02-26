@@ -259,13 +259,14 @@ func transformSeries(ctx context.Context, series series, attribution string, get
 
 func transformComic(comic comic, attribution string) (comicshelf.Comic, error) {
 	c := comicshelf.Comic{
-		Id:           comic.Id,
-		Title:        comic.Title,
-		Urls:         make([]comicshelf.Url, 0, len(comic.Urls)),
-		Thumbnail:    fmt.Sprintf("%s/portrait_uncanny.%s", comic.Thumbnail.Path, comic.Thumbnail.Extension),
-		Format:       comic.Format,
-		IssuerNumber: comic.IssueNumber,
-		Attribution:  attribution,
+		Id:              comic.Id,
+		Title:           comic.Title,
+		Urls:            make([]comicshelf.Url, 0, len(comic.Urls)),
+		Thumbnail:       fmt.Sprintf("%s/portrait_uncanny.%s", comic.Thumbnail.Path, comic.Thumbnail.Extension),
+		Format:          comic.Format,
+		IssuerNumber:    comic.IssueNumber,
+		Attribution:     attribution,
+		AttributionLink: "https://marvel.com",
 	}
 
 	seriesId, err := extractId(comic.Series.ResourceURI)

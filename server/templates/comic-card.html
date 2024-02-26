@@ -8,13 +8,13 @@
 
         <input type="hidden" name="series" value="{{.SeriesId}}" />
 
-        {{block "track" .}}{{end}}
+        {{block "card-actions" .}}{{end}}
         <div class="pusher"></div>
-        <div class="marvel-links">{{justTheDate .OnSaleDate}}</div>
+        <div class="comic-links">{{justTheDate .OnSaleDate}}</div>
         {{range .Urls}}
-        <div class="marvel-links"><a href="{{.Url}}" target="_blank">{{.Type}}</a></div>
+        <div class="comic-links"><a href="{{.Url}}" target="_blank">{{.Type}}</a></div>
         {{end}}
-        <div class="marvel-links"><a href="https://marvel.com">{{.Attribution}}</a></div>
+        <div class="comic-links"><a href="{{.AttributionLink}}">{{.Attribution}}</a></div>
     </form>
 </div>
 {{end}}

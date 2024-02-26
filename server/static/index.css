@@ -126,7 +126,7 @@ body {
     cursor: pointer;
 }
 
-.container>form>.marvel-links {
+.container>form>.comic-links {
     border-top: 1px solid black;
     padding: 4px;
     text-align: end;
