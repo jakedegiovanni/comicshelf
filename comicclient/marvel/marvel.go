@@ -127,7 +127,7 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 	first, last := c.weekRange(c.marvelUnlimitedDate(t))
 	endpoint := fmt.Sprintf("/comics?format=comic&formatType=comic&noVariants=true&dateRange=%s,%s&hasDigitalIssue=true&orderBy=issueNumber&limit=100", first.Format(c.cfg.DateLayout), last.Format(c.cfg.DateLayout))
 
-	marvelComics, err := request[comic](endpoint, c.comicCache, c.client)
+	marvelComics, err := request[comic](ctx, endpoint, c.comicCache, c.client)
 	if err != nil {
 		return comicshelf.Page[comicshelf.Comic]{}, err
 	}
@@ -147,7 +147,7 @@ func (c *Client) GetWeeklyComics(ctx context.Context, t time.Time) (comicshelf.P
 
 func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/comics/%d", id)
-	marvelComic, err := request[comic](endpoint, c.comicCache, c.client)
+	marvelComic, err := request[comic](ctx, endpoint, c.comicCache, c.client)
 	if err != nil {
 		return comicshelf.Comic{}, err
 	}
@@ -161,7 +161,7 @@ func (c *Client) GetComic(ctx context.Context, id int) (comicshelf.Comic, error)
 
 func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshelf.Comic, error) {
 	endpoint := fmt.Sprintf("/series/%d/comics?format=comic&formatType=comic&noVariants=true&hasDigitalIssue=true&orderBy=issueNumber&limit=100", id)
-	marvelComics, err := request[comic](endpoint, c.comicCache, c.client)
+	marvelComics, err := request[comic](ctx, endpoint, c.comicCache, c.client)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (c *Client) GetComicsWithinSeries(ctx context.Context, id int) ([]comicshel
 
 func (c *Client) GetSeries(ctx context.Context, id int) (comicshelf.Series, error) {
 	endpoint := fmt.Sprintf("/series/%d", id)
-	series, err := request[series](endpoint, c.seriesCache, c.client)
+	series, err := request[series](ctx, endpoint, c.seriesCache, c.client)
 	if err != nil {
 		return comicshelf.Series{}, err
 	}
@@ -312,15 +312,14 @@ func extractId(s string) (int, error) {
 	return 0, fmt.Errorf("could not extract a valid id from: %s", s)
 }
 
-func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.Client) (*dataWrapper[T], error) {
+func request[T any](ctx context.Context, endpoint string, cache *Cache[dataWrapper[T]], client *http.Client) (*dataWrapper[T], error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not create request: %w", err)
+	}
+
 	var resp *http.Response
-
 	if data, ok := cache.Get(endpoint); ok {
-		req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-		if err != nil {
-			return nil, fmt.Errorf("could not create request: %w", err)
-		}
-
 		req.Header.Set("If-None-Match", data.Etag)
 
 		resp, err = client.Do(req)
@@ -335,8 +334,7 @@ func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.
 	} else {
 		slog.Debug("item not present in cache")
 
-		var err error
-		resp, err = client.Get(endpoint)
+		resp, err = client.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("error whilst performing request: %w", err)
 		}
@@ -345,7 +343,7 @@ func request[T any](endpoint string, cache *Cache[dataWrapper[T]], client *http.
 	defer resp.Body.Close()
 
 	var d dataWrapper[T]
-	err := json.NewDecoder(resp.Body).Decode(&d)
+	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode data wrapper: %w", err)
 	}
