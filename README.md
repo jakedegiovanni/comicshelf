@@ -20,13 +20,13 @@
 - better error handling
 - better logging
     - use slog everywhere (complete)
-    - no more os.exit from non root paths
+    - no more os.exit from non root paths (complete)
 - htmx to enable better html structure (in progress)
     - comic-card : follow / unfollow (complete)
     - navbar
     - don't use cdn
     - accessibility
-- middleware for enforcing date query parameter on marvel endpoints
+- middleware for enforcing date query parameter on marvel endpoints (complete)
 - in-mem db persists beyond restarts (complete)
 - real db? object storage sufficient? something on filesystem enough?
 - efficient network usage, lots of network requests happening with html setup as it is
