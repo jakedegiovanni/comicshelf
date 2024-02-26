@@ -108,7 +108,7 @@ type Client struct {
 
 func New(cfg *Config) *Client {
 	return &Client{
-		client: comicclient.NewClient(&cfg.Client, comicclient.MiddlewareChain(
+		client: comicclient.New(&cfg.Client, comicclient.MiddlewareChain(
 			comicclient.AddBaseMiddleware(cfg.Client.BaseURL), // todo would prefer this to be managed by comicclient since it comes from its config
 			apiKeyMiddleware(),
 		)),

@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func NewClient(cfg *Config, middleware ...Middleware) *http.Client {
+func New(cfg *Config, middleware ...Middleware) *http.Client {
 	return &http.Client{
 		Transport: ClientMiddlewareChain(middleware...)(http.DefaultTransport),
 		Timeout:   cfg.Timeout,
