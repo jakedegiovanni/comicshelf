@@ -1,0 +1,38 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>Comicshelf</title>
+
+    <link href="/static/index.css" rel="stylesheet" />
+    <script src="/static/index.js"></script>
+
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+
+    <script src="https://unpkg.com/htmx.org@1.9.4"
+        integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+        crossorigin="anonymous"></script>
+</head>
+
+<body onload="activateNavItems()">
+    <div class="bar navbar">
+        {{block "left-navbar" . }}
+        <div></div>
+        {{ end }}
+
+        <div>Comicshelf - {{.Title}}</div>
+
+        <div class="navigation">
+            <a class="nav-item" id="/comics" href="/comics">Comics</a>
+        </div>
+    </div>
+
+    <div class="main">
+        {{template "content" .}}
+    </div>
+
+    <div class="pusher"></div>
+</body>
+
+</html>

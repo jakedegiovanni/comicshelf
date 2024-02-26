@@ -1,0 +1,20 @@
+{{define "comic-card"}}
+<div id="{{.Id}}" class="container">
+    <img src="{{.Thumbnail}}" alt="img" />
+    <form>
+        <div class="title">
+            <h3><a href="/series/{{.SeriesId}}">{{.Title}}</a></h3>
+        </div>
+
+        <input type="hidden" name="series" value="{{.SeriesId}}" />
+
+        {{block "card-actions" .}}{{end}}
+        <div class="pusher"></div>
+        <div class="comic-links">{{justTheDate .OnSaleDate}}</div>
+        {{range .Urls}}
+        <div class="comic-links"><a href="{{.Url}}" target="_blank">{{.Type}}</a></div>
+        {{end}}
+        <div class="comic-links"><a href="{{.AttributionLink}}">{{.Attribution}}</a></div>
+    </form>
+</div>
+{{end}}
