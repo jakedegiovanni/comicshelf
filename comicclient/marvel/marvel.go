@@ -189,7 +189,7 @@ func (c *Client) GetSeries(ctx context.Context, id int) (comicshelf.Series, erro
 		return comicshelf.Series{}, fmt.Errorf("could not find series with id: %d", id)
 	}
 
-	return transformSeries(ctx, series.Data.Results[0], series.AttributionText, c.GetComic)
+	return transformSeries(ctx, series.Data.Results[0], c.GetComic)
 }
 
 func (c *Client) weekRange(t time.Time) (time.Time, time.Time) {
@@ -216,7 +216,7 @@ func transformPage[C, P any](data dataContainer[C]) comicshelf.Page[P] {
 	}
 }
 
-func transformSeries(ctx context.Context, series series, attribution string, getComic func(context.Context, int) (comicshelf.Comic, error)) (comicshelf.Series, error) {
+func transformSeries(ctx context.Context, series series, getComic func(context.Context, int) (comicshelf.Comic, error)) (comicshelf.Series, error) {
 	s := comicshelf.Series{
 		Id:        series.Id,
 		Title:     series.Title,
