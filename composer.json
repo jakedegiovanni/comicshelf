@@ -1,0 +1,25 @@
+{
+    "name": "jakedegiovanni/comicshelf",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Comicshelf\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Jake Degiovanni",
+            "email": "degiojake@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "ext-openssl": "*",
+        "ext-phalcon": "^5.0.0",
+        "pds/skeleton": "^1.0"
+    },
+    "require-dev": {
+        "phalcon/ide-stubs": "^v5.0.1"
+    }
+}

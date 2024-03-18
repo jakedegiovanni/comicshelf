@@ -21,11 +21,7 @@ build: clean
 
 .PHONY: run
 run:
-	go run ./cmd/comicshelf server $(ARGS)
-
-.PHONY: run-cli
-run-cli:
-	go run ./cmd/comicshelf $(ARGS)
+	php -S 127.0.0.1:8080 -t public/ .htrouter.php
 
 .PHONY: test
 test:
