@@ -1,0 +1,15 @@
+{% extends 'base.phtml' %}
+
+{% block leftnavbar %}
+<form method="get">
+    <label for="date">Release Week</label>
+    <input type="date" id="date" name="date" value="{{ date }}"/>
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% for comic in resp.data.results %}
+{% include 'comic-card.phtml' %}
+{% endfor %}
+{% endblock %}

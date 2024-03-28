@@ -1,0 +1,24 @@
+<div id="{{ comic.id }}" class="container">
+    <img src="{{ comic.thumbnail.path }}/portrait_uncanny.{{ comic.thumbnail.extension }}" alt="img"/>
+    <form>
+        <div class="title">
+            <h3><a href="/series/{{ comic.series.name }}">{{ comic.title }}</a></h3>
+        </div>
+
+        <input type="hidden" name="series" value="{{ comic.series.name }}"/>
+
+        <div class="pusher"></div>
+
+        {% for date in comic.dates %}
+        {% if date.type == 'onsaleDate' %}
+        <div class="comic-links">{{ date.date | capitalize }}</div>
+        {% endif %}
+        {% endfor %}
+
+        {% for u in comic.urls %}
+        <div class="comic-links"><a href="{{ u.url }}" target="_blank">{{ u.type | capitalize }}</a></div>
+        {% endfor %}
+
+        <div class="comic-links"><a href="https://marvel.com">{{ resp.attributionText }}</a></div>
+    </form>
+</div>
