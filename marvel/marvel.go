@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/comicclient"
+	"github.com/jakedegiovanni/comicshelf/internal/comicclient"
 	"golang.org/x/sync/errgroup"
 )
 

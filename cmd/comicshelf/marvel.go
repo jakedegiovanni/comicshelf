@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jakedegiovanni/comicshelf/comicclient/marvel"
+	"github.com/jakedegiovanni/comicshelf/marvel"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jakedegiovanni/comicshelf/comicclient"
+	"github.com/jakedegiovanni/comicshelf/internal/comicclient"
 )
 
 // todo pub/priv will need to come from a secrets manager

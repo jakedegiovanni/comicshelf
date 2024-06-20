@@ -16,8 +16,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/server/static"
-	"github.com/jakedegiovanni/comicshelf/server/templates"
+	"github.com/jakedegiovanni/comicshelf/internal/server/static"
+	"github.com/jakedegiovanni/comicshelf/internal/server/templates"
 	"golang.org/x/sync/errgroup"
 )
 

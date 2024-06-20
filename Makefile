@@ -1,3 +1,7 @@
+ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(eval $(ARGS):;@:)
+
+BUILD_DIR := bin
 LINT_VERSION := 1.54.2
 
 .PHONY: all
@@ -13,19 +17,19 @@ lint:
 
 .PHONY: clean
 clean:
-	rm -rf bin
+	rm -rf ${BUILD_DIR}
 
 .PHONY: build
 build: clean
-	go build -v -x -o bin/ ./cmd/comicshelf
+	go build -v -x -o ${BUILD_DIR}/ ./cmd/...
 
 .PHONY: run
 run:
-	go run ./cmd/comicshelf server $(ARGS)
+	go run ./cmd/comicshelf server ${ARGS}
 
 .PHONY: run-cli
 run-cli:
-	go run ./cmd/comicshelf $(ARGS)
+	go run ./cmd/comicshelf ${ARGS}
 
 .PHONY: test
 test:

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jakedegiovanni/comicshelf/cmd/hooks"
+	"github.com/jakedegiovanni/comicshelf/cmd/internal/hooks"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

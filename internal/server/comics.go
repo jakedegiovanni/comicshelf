@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/server/templates"
+	"github.com/jakedegiovanni/comicshelf/internal/server/templates"
 )
 
 func (s *Server) registerComicRoutes(router chi.Router) {
