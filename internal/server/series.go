@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/internal/server/templates"
 )
 
 func (s *Server) registerSeriesRoutes(router chi.Router) {
@@ -30,7 +29,7 @@ func (s *Server) handleSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := templates.View[[]comicshelf.Comic]{
+	content := View[[]comicshelf.Comic]{
 		Date:  r.URL.Query().Get("date"),
 		Title: "Series Issues",
 		Resp:  resp,

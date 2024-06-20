@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/jakedegiovanni/comicshelf/cmd/internal/hooks"
 	"github.com/mitchellh/mapstructure"
@@ -49,6 +50,7 @@ func main() {
 
 			ctx := context.WithValue(cmd.Context(), cfgCtxKey, &cfg)
 			cmd.SetContext(ctx)
+			slog.SetDefault(cfg.Logger.Slog())
 			return nil
 		},
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log/slog"
 	"time"
 
 	"github.com/jakedegiovanni/comicshelf/marvel"
@@ -20,8 +19,6 @@ func marvelCmd(v *viper.Viper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			slog.SetDefault(cfg.Logger.Slog())
 
 			svc := marvel.New(&cfg.Marvel)
 

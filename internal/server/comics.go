@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/internal/server/templates"
 )
 
 func (s *Server) registerComicRoutes(router chi.Router) {
@@ -28,7 +27,7 @@ func (s *Server) handleWeeklyComics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content := templates.View[comicshelf.Page[comicshelf.Comic]]{
+	content := View[comicshelf.Page[comicshelf.Comic]]{
 		Date:  r.URL.Query().Get("date"),
 		Title: "Weekly Comics",
 		Resp:  comics,
