@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,12 +18,22 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jakedegiovanni/comicshelf"
-	"github.com/jakedegiovanni/comicshelf/server/static"
-	"github.com/jakedegiovanni/comicshelf/server/templates"
 	"golang.org/x/sync/errgroup"
 )
 
 const justTheDateFormat = "2006-01-02"
+
+//go:embed static
+var static embed.FS
+
+//go:embed templates
+var templates embed.FS
+
+type View[T any] struct {
+	Date  string
+	Title string
+	Resp  T
+}
 
 type Server struct {
 	cfg        *Config
@@ -38,7 +50,7 @@ func New(
 	comics comicshelf.ComicService,
 	series comicshelf.SeriesService,
 	user comicshelf.UserService,
-) *Server {
+) (*Server, error) {
 	router := chi.NewRouter()
 
 	srv := &http.Server{
@@ -63,18 +75,23 @@ func New(
 		},
 	}
 
+	templates, err := fs.Sub(templates, "templates")
+	if err != nil {
+		return nil, err
+	}
+
 	comicTmpl := template.Must(
 		template.
 			New("comicTmpl").
 			Funcs(tmplFuncs).
-			ParseFS(templates.Files, "*.html", "comics/*.html"),
+			ParseFS(templates, "*.html", "comics/*.html"),
 	)
 
 	seriesTmpl := template.Must(
 		template.
 			New("seriesTmpl").
 			Funcs(tmplFuncs).
-			ParseFS(templates.Files, "*.html", "series/*.html"),
+			ParseFS(templates, "*.html", "series/*.html"),
 	)
 
 	s := &Server{
@@ -91,7 +108,7 @@ func New(
 	router.Use(middleware.Recoverer)
 
 	router.Group(func(r chi.Router) {
-		r.Mount("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(static.Files))))
+		r.Mount("/static/", http.FileServer(http.FS(static)))
 	})
 
 	router.Group(func(r chi.Router) {
@@ -110,7 +127,7 @@ func New(
 		})
 	})
 
-	return s
+	return s, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {

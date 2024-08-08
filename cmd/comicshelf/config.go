@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/jakedegiovanni/comicshelf/comicclient"
-	"github.com/jakedegiovanni/comicshelf/comicclient/marvel"
-	"github.com/jakedegiovanni/comicshelf/filedb"
-	"github.com/jakedegiovanni/comicshelf/server"
+	"github.com/jakedegiovanni/comicshelf/internal/comicclient"
+	"github.com/jakedegiovanni/comicshelf/internal/filedb"
+	"github.com/jakedegiovanni/comicshelf/internal/server"
+	"github.com/jakedegiovanni/comicshelf/marvel"
 	"github.com/spf13/viper"
 )
 

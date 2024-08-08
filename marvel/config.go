@@ -1,7 +1,7 @@
 package marvel
 
 import (
-	"github.com/jakedegiovanni/comicshelf/comicclient"
+	"github.com/jakedegiovanni/comicshelf/internal/comicclient"
 )
 
 type Config struct {
