@@ -152,11 +152,11 @@ impl<T: Cacheable + DeserializeOwned + Clone> EtagCache<T> {
     }
 }
 
-impl Into<comicshelf::Page<comicshelf::Comic>> for DataWrapper<Comic> {
-    fn into(self) -> Page<comicshelf::Comic> {
+impl From<DataWrapper<Comic>> for comicshelf::Page<comicshelf::Comic> {
+    fn from(value: DataWrapper<Comic>) -> Self {
         let mut comics = Vec::<comicshelf::Comic>::new();
 
-        for comic in self.data.results {
+        for comic in value.data.results {
             let mut urls = Vec::<comicshelf::Url>::new();
             for url in comic.urls {
                 urls.push(comicshelf::Url::new(url.typ, url.url));
@@ -192,17 +192,17 @@ impl Into<comicshelf::Page<comicshelf::Comic>> for DataWrapper<Comic> {
                 comic.format,
                 comic.issue_number,
                 on_sale_date,
-                self.attribution_text.clone(),
+                value.attribution_text.clone(),
                 "https://marvel.com".to_string(),
                 series_id,
             ));
         }
 
         Page::new(
-            self.data.limit,
-            self.data.total,
-            self.data.count,
-            self.data.offset,
+            value.data.limit,
+            value.data.total,
+            value.data.count,
+            value.data.offset,
             comics,
         )
     }
@@ -292,7 +292,32 @@ impl comicshelf::ComicClient for Client {
     }
 
     async fn get_comic(&self, id: i64) -> Result<comicshelf::Comic, Error> {
-        todo!()
+        let endpoint = format!("/comics/{id}");
+        let uri = self.uri(&endpoint);
+
+        let result: DataWrapper<Comic> = self
+            .comic_cache
+            .retrieve(&endpoint, |headers| async {
+                self.http_client
+                    .get(uri)
+                    .headers(headers)
+                    .send()
+                    .await
+                    .map_err(|e| anyhow!(e))?
+                    .error_for_status()
+                    .map_err(|e| anyhow!(e))
+            })
+            .await?;
+
+        if result.data.count == 0 {
+            return Err(anyhow!(format!("could not find comic for id: {id}")));
+        }
+
+        Ok(comicshelf::Page::<comicshelf::Comic>::from(result)
+            .results
+            .first()
+            .unwrap()
+            .to_owned())
     }
 }
 
