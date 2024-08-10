@@ -1,0 +1,19 @@
+<div id="{{ result.id }}" class="container">
+    <img src="{{ result.thumbnail }}" alt="img" />
+    <form>
+        <div class="title">
+            <h3><a href="/series/{{ result.series_id }}">{{ result.title }}</a></h3>
+        </div>
+
+        <input type="hidden" name="series" value="{{ result.series_id }}" />
+        {% include "partials/card-actions.html" %}
+
+        <div class="pusher"></div>
+
+        <div class="comic-links">{{ result.on_sale_date }}</div>
+
+        {% for url in result.urls %}
+        <div class="comic-links"><a href="{{ url.url }}" target="_blank">{{ url.type }}</a></div>
+        {% endfor %}
+    </form>
+</div>

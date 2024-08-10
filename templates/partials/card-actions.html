@@ -1,0 +1,5 @@
+{% if following(index=result.series_id) %}
+{% include "partials/unfollow.html" %}
+{% else %}
+{% include "partials/follow.html" %}
+{% endif %}

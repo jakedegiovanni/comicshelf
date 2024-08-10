@@ -4,24 +4,17 @@ use std::sync::Arc;
 use axum::extract::{FromRequestParts, State};
 use tera::Tera;
 
-use crate::marvel;
+use crate::comicshelf;
 
 pub struct App {
-    pub marvel_client: Box<dyn marvel::Client>,
+    pub comic_client: Box<dyn comicshelf::Client>,
     pub tera: Tera,
 }
 
 impl App {
-    pub fn new(client: reqwest::Client, tera: Tera) -> Self {
-        let marvel_client = Box::new(marvel::RealClient::new(
-            client,
-            include_str!("../pub.txt"),
-            include_str!("../priv.txt"),
-            "https://gateway.marvel.com/v1/public",
-        ));
-
+    pub fn new(client: Box<dyn comicshelf::Client>, tera: Tera) -> Self {
         App {
-            marvel_client,
+            comic_client: client,
             tera,
         }
     }

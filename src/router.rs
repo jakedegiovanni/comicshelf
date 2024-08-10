@@ -2,20 +2,22 @@ use axum::{routing::get, Router};
 use tower::ServiceBuilder;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 
-use crate::{app::AppState, marvel, middleware};
+use crate::{app::AppState, controllers, middleware};
 
 pub fn build(state: AppState) -> Router {
     Router::new()
         .nest(
-            "/marvel-unlimited",
-            Router::new()
-                .route("/comics", get(marvel::controllers::comics))
-                .layer(
-                    ServiceBuilder::new()
-                        .layer(axum::middleware::from_fn(middleware::enforce_date_query)),
-                ),
+            "/comics",
+            Router::new().route("/", get(controllers::comics)).layer(
+                ServiceBuilder::new()
+                    .layer(axum::middleware::from_fn(middleware::enforce_date_query)),
+            ),
         )
-        .nest_service("/static", ServeDir::new("static"))
+        .nest(
+            "/series",
+            Router::new().route("/:seriesId", get(controllers::series)),
+        )
+        .nest_service("/static", ServeDir::new("internal/server/static"))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
         .with_state(state)
 }
