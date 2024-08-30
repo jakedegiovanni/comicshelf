@@ -5,13 +5,13 @@ use tower::BoxError;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("internal error")]
+    #[error("internal error: {0}")]
     Anyhow(#[from] anyhow::Error),
     #[error("rendering error: Error: {0}")]
     Tera(#[from] tera::Error),
     #[error("box error")]
     Box(#[from] BoxError),
-    #[error("hyper error")]
+    #[error("hyper error: {0}")]
     Hyper(#[from] hyper::http::Error),
     #[error("uri error")]
     Uri(#[from] InvalidUri),

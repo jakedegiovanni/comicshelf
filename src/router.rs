@@ -15,7 +15,7 @@ pub fn build(state: AppState) -> Router {
         )
         .nest(
             "/series",
-            Router::new().route("/:seriesId", get(controllers::series)),
+            Router::new().route("/:series_id", get(controllers::series)),
         )
         .nest_service("/static", ServeDir::new("internal/server/static"))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))

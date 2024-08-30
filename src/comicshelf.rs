@@ -90,13 +90,11 @@ pub struct Series {
 #[async_trait]
 pub trait ComicClient: Send + Sync {
     async fn weekly_comics(&self, date: NaiveDate) -> Result<Page<Comic>, anyhow::Error>;
-    async fn get_comic(&self, id: i64) -> Result<Comic, anyhow::Error>;
 }
 
 #[async_trait]
 pub trait SeriesClient: Send + Sync {
-    async fn get_comics_within_series(&self, id: i64) -> Result<Vec<Comic>, anyhow::Error>;
-    async fn get_series(&self, id: i64) -> Result<Series, anyhow::Error>;
+    async fn get_comics_within_series(&self, series_id: i64) -> Result<Page<Comic>, anyhow::Error>;
 }
 
 #[async_trait]

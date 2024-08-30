@@ -6,7 +6,7 @@ use std::{
 
 use crate::comicshelf;
 use crate::comicshelf::Page;
-use anyhow::{anyhow, Error};
+use anyhow::anyhow;
 use async_trait::async_trait;
 use axum::http::HeaderValue;
 use chrono::{DateTime, Datelike, Days, Months, NaiveDate, Utc, Weekday};
@@ -54,6 +54,23 @@ pub struct Comic {
     pub issue_number: i64,
     pub series: Item,
     pub dates: Vec<Date>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Collection {
+    pub items: Vec<Item>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Series {
+    pub id: i64,
+    pub title: String,
+    #[serde(rename = "resourceURI")]
+    pub resource_uri: String,
+    pub urls: Vec<Url>,
+    pub modified: String,
+    pub thumbnail: Thumbnail,
+    pub comics: Collection,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -157,21 +174,22 @@ impl From<DataWrapper<Comic>> for comicshelf::Page<comicshelf::Comic> {
         let mut comics = Vec::<comicshelf::Comic>::new();
 
         for comic in value.data.results {
-            let mut urls = Vec::<comicshelf::Url>::new();
-            for url in comic.urls {
-                urls.push(comicshelf::Url::new(url.typ, url.url));
-            }
+            let urls: Vec<comicshelf::Url> = comic
+                .urls
+                .into_iter()
+                .map(|u| comicshelf::Url::new(u.typ, u.url))
+                .collect();
 
-            let mut on_sale_date: NaiveDate = Utc::now().date_naive();
-            for date in comic.dates {
-                if !date.typ.eq_ignore_ascii_case("onsaledate") {
-                    continue;
-                }
-
-                on_sale_date = DateTime::parse_from_str(&date.date, "%Y-%m-%dT%T%z")
-                    .expect("could not parse marvel time")
-                    .date_naive();
-            }
+            let on_sale_date = comic
+                .dates
+                .into_iter()
+                .find(|d| d.typ.eq_ignore_ascii_case("onsaleDate"))
+                .map(|d| {
+                    DateTime::parse_from_str(&d.date, "%Y-%m-%dT%T%z")
+                        .expect("could not parse marvel time")
+                        .date_naive()
+                })
+                .unwrap();
 
             let re = regex::Regex::new("/([0-9]+)/?").expect("could not compile regex");
             let Some((_, [i])) = re.captures(&comic.series.resource_uri).map(|c| c.extract())
@@ -262,6 +280,23 @@ impl Client {
     fn uri(&self, endpoint: &str) -> String {
         format!("{}{endpoint}&{}", self.base_url, self.auth())
     }
+
+    async fn do_comic_request(&self, endpoint: &str) -> Result<DataWrapper<Comic>, anyhow::Error> {
+        let uri = self.uri(endpoint);
+
+        self.comic_cache
+            .retrieve(endpoint, |headers| async {
+                self.http_client
+                    .get(uri)
+                    .headers(headers)
+                    .send()
+                    .await
+                    .map_err(|e| anyhow!(e))?
+                    .error_for_status()
+                    .map_err(|e| anyhow!(e))
+            })
+            .await
+    }
 }
 
 #[async_trait]
@@ -272,52 +307,8 @@ impl comicshelf::ComicClient for Client {
     ) -> Result<comicshelf::Page<comicshelf::Comic>, anyhow::Error> {
         let (date, date2) = Client::week_range(date);
         let endpoint = format!("/comics?format=comic&formatType=comic&noVariants=true&dateRange={date},{date2}&hasDigitalIssue=true&orderBy=issueNumber&limit=100");
-        let uri = self.uri(&endpoint);
 
-        let result = self
-            .comic_cache
-            .retrieve(&endpoint, |headers| async {
-                self.http_client
-                    .get(uri)
-                    .headers(headers)
-                    .send()
-                    .await
-                    .map_err(|e| anyhow!(e))?
-                    .error_for_status()
-                    .map_err(|e| anyhow!(e))
-            })
-            .await?;
-
-        Ok(result.into())
-    }
-
-    async fn get_comic(&self, id: i64) -> Result<comicshelf::Comic, Error> {
-        let endpoint = format!("/comics/{id}");
-        let uri = self.uri(&endpoint);
-
-        let result: DataWrapper<Comic> = self
-            .comic_cache
-            .retrieve(&endpoint, |headers| async {
-                self.http_client
-                    .get(uri)
-                    .headers(headers)
-                    .send()
-                    .await
-                    .map_err(|e| anyhow!(e))?
-                    .error_for_status()
-                    .map_err(|e| anyhow!(e))
-            })
-            .await?;
-
-        if result.data.count == 0 {
-            return Err(anyhow!(format!("could not find comic for id: {id}")));
-        }
-
-        Ok(comicshelf::Page::<comicshelf::Comic>::from(result)
-            .results
-            .first()
-            .unwrap()
-            .to_owned())
+        Ok(self.do_comic_request(&endpoint).await?.into())
     }
 }
 
@@ -325,13 +316,11 @@ impl comicshelf::ComicClient for Client {
 impl comicshelf::SeriesClient for Client {
     async fn get_comics_within_series(
         &self,
-        id: i64,
-    ) -> Result<Vec<comicshelf::Comic>, anyhow::Error> {
-        todo!();
-    }
+        series_id: i64,
+    ) -> Result<Page<comicshelf::Comic>, anyhow::Error> {
+        let endpoint = format!("/series/{series_id}/comics?format=comic&formatType=comic&noVariants=true&hasDigitalIssue=true&orderBy=issueNumber&limit=100");
 
-    async fn get_series(&self, id: i64) -> Result<comicshelf::Series, anyhow::Error> {
-        todo!();
+        Ok(self.do_comic_request(&endpoint).await?.into())
     }
 }
 
