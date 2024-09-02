@@ -26,10 +26,12 @@ type marvelTime struct {
 }
 
 func (m *marvelTime) UnmarshalJSON(b []byte) error {
+	date := string(b)
 	var err error
-	m.Time, err = time.Parse(apiDateFormat, strings.ReplaceAll(string(b), `"`, ""))
+	m.Time, err = time.Parse(apiDateFormat, strings.ReplaceAll(date, `"`, ""))
 	if err != nil {
-		return err
+		slog.Warn("could not parse marvel time", slog.String("date", date), slog.String("error", err.Error()))
+		m.Time = time.Time{}
 	}
 
 	return nil

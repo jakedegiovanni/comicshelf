@@ -23,6 +23,15 @@ clean:
 build: clean
 	go build -v -x -o ${BUILD_DIR}/ ./cmd/...
 
+.PHONY: dev
+dev: 
+	docker compose build
+	docker compose up -d
+
+.PHONY: down
+down:
+	docker compose down --remove-orphans
+
 .PHONY: run
 run:
 	go run ./cmd/comicshelf server ${ARGS}

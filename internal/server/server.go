@@ -127,6 +127,10 @@ func New(
 		})
 	})
 
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("healthy"))
+	})
+
 	return s, nil
 }
 

@@ -1,0 +1,13 @@
+logger:
+  level: ${LOGGER_LEVEL:debug}
+  disabled: ${LOGGER_DISABLED:false}
+filedb:
+  filename: db.json
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1:8080}
+marvel:
+  client:
+    timeout: 20s
+    base_url: https://gateway.marvel.com/v1/public
+    date_layout: 2006-01-02
+  release_offset: -3

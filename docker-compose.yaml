@@ -1,0 +1,16 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.devcontainer
+      args:
+        - USERNAME=developer
+    ports:
+      - 8080:8080
+    volumes:
+      - ./:/app
+    environment:
+      SERVER_ADDRESS: 0.0.0.0:8080
+      LOGGER_LEVEL: debug
+    user: developer:developer
+    command: sleep infinity

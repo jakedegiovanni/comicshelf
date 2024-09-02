@@ -5,12 +5,10 @@ import (
 
 	"github.com/jakedegiovanni/comicshelf/marvel"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-func marvelCmd(v *viper.Viper) *cobra.Command {
-
-	// todo - configure through viper
+func marvelCmd() *cobra.Command {
+	// todo - configure strategy?
 
 	today := &cobra.Command{
 		Use: "today",

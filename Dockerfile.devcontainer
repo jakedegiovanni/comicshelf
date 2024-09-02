@@ -1,0 +1,18 @@
+FROM golang:1.23-bookworm
+
+ARG USERNAME
+ARG UID=1000
+ARG GID=${UID}
+
+ENV HOME=/home/${USERNAME}
+
+RUN groupadd --gid ${GID} ${USERNAME} \
+    && useradd --uid ${UID} --gid ${GID} -m ${USERNAME} \
+    && chown -R ${UID}:${GID} ${HOME}
+
+USER ${USERNAME}
+
+RUN go install golang.org/x/tools/gopls@latest
+RUN go install honnef.co/go/tools/cmd/staticcheck@latest
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest

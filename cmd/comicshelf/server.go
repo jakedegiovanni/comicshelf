@@ -5,11 +5,10 @@ import (
 	"github.com/jakedegiovanni/comicshelf/internal/server"
 	"github.com/jakedegiovanni/comicshelf/marvel"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-func serverCmd(v *viper.Viper) *cobra.Command {
-	// todo viper config
+func serverCmd() *cobra.Command {
+	// todo configure strategy?
 
 	server := &cobra.Command{
 		Use: "server",
