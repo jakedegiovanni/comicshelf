@@ -9,5 +9,6 @@ db.json
 target/
 
 node_modules/
+dist/
 
 *.env

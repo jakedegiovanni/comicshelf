@@ -9,7 +9,8 @@
     "build": "npx tsc",
     "run": "node --env-file=.env dist/server.js",
     "lint": "npx eslint src",
-    "fmt": "npx prettier src --write"
+    "fmt": "npx prettier src --write",
+    "clean": "rm -rf dist"
   },
   "repository": {
     "type": "git",

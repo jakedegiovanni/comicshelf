@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material';
-import { red, blueGrey, amber } from '@mui/material/colors';
+import { amber, blueGrey, red } from '@mui/material/colors';
 
 const theme = createTheme({
   cssVariables: true,
