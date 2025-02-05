@@ -6,12 +6,13 @@
     "configurations": [
         {
             "name": "Launch Server",
-            "type": "go",
+            "type": "node",
             "request": "launch",
-            "mode": "auto",
-            "program": "cmd/comicshelf",
-            "args": [
-                "server"
+            "program": "${workspaceFolder}/server/server.ts",
+            "preLaunchTask": "npm: build",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.(m|c|)js",
+                "!**/node_modules/**"
             ]
         }
     ]
