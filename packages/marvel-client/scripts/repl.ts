@@ -1,9 +1,16 @@
 import { configFromEnv } from '../src/config.ts';
 import { BaseClient } from '../src/base.ts';
+import repl from 'node:repl';
 
 const config = configFromEnv();
 
 const client = new BaseClient(config);
 
-const response = await client.getV1PublicCharacters({ limit: 50 });
-console.log(JSON.stringify(response, null, 2));
+const context = {
+  config,
+  client,
+};
+
+const r = repl.start();
+
+Object.assign(r.context, context);

@@ -38,10 +38,12 @@ export const request = async <Response, Data>(
     ...body,
   });
 
-  if (!response.ok)
+  if (!response.ok) {
+    console.log(response.headers); // todo remove
     throw new Error(
       `Request not ok with: ${response.status} ${response.statusText}`,
     );
+  }
 
   return (await response.json()) as Response;
 };

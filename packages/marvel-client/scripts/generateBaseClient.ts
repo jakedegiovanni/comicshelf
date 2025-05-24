@@ -37,10 +37,19 @@ const createMethodName = (
   path: string,
   operation: { httpMethod: string },
 ): string => {
-  return `${operation.httpMethod.toLowerCase()}${api.path
+  const methodPart = operation.httpMethod.toLowerCase();
+  const endpointParts = path
     .split('/')
-    .map(e => `${e.slice(0, 1).toUpperCase()}${e.slice(1)}`)
-    .join('')}`;
+    .map(e => {
+      if (e.includes('{')) {
+        e = e.replaceAll('{', '').replaceAll('}', '');
+        return `By${e.slice(0, 1).toUpperCase()}${e.slice(1)}`;
+      }
+      return `${e.slice(0, 1).toUpperCase()}${e.slice(1)}`;
+    })
+    .join('');
+
+  return `${methodPart}${endpointParts}`;
 };
 
 const createQueryMap = (operation: {
@@ -66,7 +75,7 @@ const createQueryMap = (operation: {
   return `query: {${params}}`;
 };
 
-const createInputs = (operation: {
+const createPathParamMap = (operation: {
   parameters: {
     allowMultiple: boolean;
     required: boolean;
@@ -75,21 +84,36 @@ const createInputs = (operation: {
     paramType: string;
     allowableValues?: { values: string[] };
   }[];
-}): string => {
-  const queries = createQueryMap(operation);
+}): { ty: string; names: string[] } => {
+  const names: string[] = [];
+  const params = operation.parameters
+    .filter(param => param.paramType === 'path')
+    .map(param => {
+      names.push(param.name);
+      return `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`;
+    })
+    .join(',');
 
-  return queries;
+  if (!params) return { ty: '', names };
+
+  return { ty: `path: {${params}}`, names };
 };
 
-const api = swagger.apis[0];
-const methods = api.operations.map(operation => {
-  return `/**
+const methods = swagger.apis.flatMap(api =>
+  api.operations.map(operation => {
+    const { ty: pathTy, names: pathNames } = createPathParamMap(operation);
+    const queries = createQueryMap(operation);
+
+    return `/**
   * ${operation.summary}
   */
-  async ${createMethodName(api.path, operation)}(${createInputs(operation)}): Promise<${operation.responseClass}> {
-        return await request(this.config, "${operation.httpMethod}", "${api.path}", query);
+  async ${createMethodName(api.path, operation)}(${[pathTy, queries].filter(i => i).join(',')}): Promise<${operation.responseClass}> {
+        ${queries ? '' : 'const query = {}'}
+        ${pathNames.length ? `const {${pathNames.join(',')}} = path` : ''}
+        return await request(this.config, "${operation.httpMethod}", \`${api.path.replaceAll('{', '${')}\`, query);
     }`;
-});
+  }),
+);
 
 const models = Object.values(swagger.models).map(model => {
   const fields = Object.entries(model.properties).map(([k, v]) => {
@@ -110,7 +134,7 @@ export class BaseClient {
         this.config = config;
     }
 
-    ${methods.join('\n')}
+    ${methods.join('\n\n')}
 }
 
 ${models.join('\n\n')}
