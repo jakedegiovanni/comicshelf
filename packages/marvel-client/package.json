@@ -14,7 +14,9 @@
     "lint": "eslint .",
     "fmt": "prettier .",
     "fmt:fix": "prettier . --write",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "generate": "node --experimental-strip-types ./scripts/generateBaseClient.ts",
+    "call": "node --experimental-strip-types --env-file ../../.env ./scripts/call.ts"
   },
   "exports": {
     ".": {
@@ -23,7 +25,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "devDependencies": {}
 }
