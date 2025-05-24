@@ -1,19 +1,7 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Launch Server",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/server/server.ts",
-            "preLaunchTask": "npm: build",
-            "outFiles": [
-                "${workspaceFolder}/dist/**/*.(m|c|)js",
-                "!**/node_modules/**"
-            ]
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": []
 }

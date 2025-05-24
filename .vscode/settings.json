@@ -1,4 +1,6 @@
 {
-    "javascript.preferGoToSourceDefinition": true,
-    "typescript.preferGoToSourceDefinition": true,
+  "javascript.preferGoToSourceDefinition": true,
+  "typescript.preferGoToSourceDefinition": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

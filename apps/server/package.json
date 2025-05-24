@@ -1,0 +1,23 @@
+{
+  "name": "@jakedegiovanni/comicshelf-server",
+  "version": "0.0.1",
+  "description": "...",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "fmt": "prettier .",
+    "fmt:fix": "prettier . --write",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.2",
+    "@jakedegiovanni/marvel-client": "^0.0.1",
+    "hono": "^4.7.10"
+  },
+  "devDependencies": {}
+}
