@@ -4,21 +4,31 @@ import path from 'node:path';
 
 const packageDir = new URL('..', import.meta.url).pathname;
 
-const mapDataType = (param: {
-  dataType: string;
-  allowMultiple: boolean;
-  allowableValues?: { values: string[] };
-}): string => {
-  let dataType = param.dataType;
-  if (dataType === 'int') dataType = 'number';
-  if (dataType === 'Date') dataType = 'string';
+const mapDataType = (
+  dt: string,
+  allowMultiple: boolean,
+  values: string[] | undefined,
+  itemsRef: string | undefined,
+): string => {
+  let dataType = dt;
 
-  if (param.allowableValues?.values?.length) {
-    dataType = param.allowableValues.values.map(v => `"${v}"`).join(' | ');
-    if (param.allowMultiple) dataType = `(${dataType})`;
+  if (dataType === 'Array') {
+    if (!itemsRef)
+      throw new Error(`itemsRef must be defined when type is of Array`);
+
+    return `${itemsRef}[]`;
   }
 
-  if (param.allowMultiple) dataType = `${dataType}[]`;
+  if (dataType === 'int' || dataType === 'float' || dataType === 'double')
+    dataType = 'number';
+  if (dataType === 'Date') dataType = 'string';
+
+  if (values?.length) {
+    dataType = values.map(v => `"${v}"`).join(' | ');
+    if (allowMultiple) dataType = `(${dataType})`;
+  }
+
+  if (allowMultiple) dataType = `${dataType}[]`;
 
   return dataType;
 };
@@ -47,7 +57,7 @@ const createQueryMap = (operation: {
     .filter(param => param.paramType === 'query')
     .map(
       param =>
-        `${param.name}${param.required ? '' : '?'}: ${mapDataType(param)}`,
+        `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`,
     )
     .join(',');
 
@@ -76,9 +86,17 @@ const methods = api.operations.map(operation => {
   return `/**
   * ${operation.summary}
   */
-  async ${createMethodName(api.path, operation)}(${createInputs(operation)}): Promise<void> {
+  async ${createMethodName(api.path, operation)}(${createInputs(operation)}): Promise<${operation.responseClass}> {
         return await request(this.config, "${operation.httpMethod}", "${api.path}", query);
     }`;
+});
+
+const models = Object.values(swagger.models).map(model => {
+  const fields = Object.entries(model.properties).map(([k, v]) => {
+    //@ts-expect-error(2339)
+    return `${k}: ${mapDataType(v.type, false, [], v.items?.$ref)}`;
+  });
+  return `export type ${model.id} = {${fields.join(',')}}`;
 });
 
 const template = `import { request } from "./request.ts";
@@ -93,7 +111,10 @@ export class BaseClient {
     }
 
     ${methods.join('\n')}
-}`;
+}
+
+${models.join('\n\n')}
+`;
 
 writeFileSync(path.join(packageDir, 'src', 'base.ts'), template);
 
