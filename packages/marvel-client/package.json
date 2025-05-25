@@ -13,7 +13,8 @@
     "fmt:fix": "prettier . --write",
     "clean": "rm -rf dist",
     "generate": "node --experimental-strip-types ./scripts/generateBaseClient.ts",
-    "repl": "node --experimental-strip-types --env-file ../../.env ./scripts/repl.ts"
+    "repl": "node --experimental-strip-types --env-file ../../.env ./scripts/repl.ts",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {
