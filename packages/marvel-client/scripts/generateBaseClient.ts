@@ -5,11 +5,13 @@ import path from 'node:path';
 const packageDir = new URL('..', import.meta.url).pathname;
 
 const mapDataType = (
+  name: string,
   dt: string,
   allowMultiple: boolean,
   values: string[] | undefined,
   itemsRef: string | undefined,
 ): string => {
+  if (name === 'dateRange') dt = 'string';
   let dataType = dt;
 
   if (dataType === 'Array') {
@@ -19,14 +21,14 @@ const mapDataType = (
     return `${itemsRef}[]`;
   }
 
-  if (dataType === 'int' || dataType === 'float' || dataType === 'double')
-    dataType = 'number';
-  if (dataType === 'Date') dataType = 'string';
-
-  if (values?.length) {
-    dataType = values.map(v => `"${v}"`).join(' | ');
+  if (Array.isArray(values) && values.length > 0) {
+    dataType =
+      dt === 'boolean' ? 'boolean' : values.map(v => `"${v}"`).join(' | ');
     if (allowMultiple) dataType = `(${dataType})`;
   }
+
+  if (dt === 'int' || dt === 'float' || dt === 'double') dataType = 'number';
+  if (dt === 'Date') dataType = 'string';
 
   if (allowMultiple) dataType = `${dataType}[]`;
 
@@ -66,7 +68,7 @@ const createQueryMap = (operation: {
     .filter(param => param.paramType === 'query')
     .map(
       param =>
-        `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`,
+        `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.name, param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`,
     )
     .join(',');
 
@@ -90,7 +92,7 @@ const createPathParamMap = (operation: {
     .filter(param => param.paramType === 'path')
     .map(param => {
       names.push(param.name);
-      return `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`;
+      return `${param.name}${param.required ? '' : '?'}: ${mapDataType(param.name, param.dataType, param.allowMultiple, param.allowableValues?.values, undefined)}`;
     })
     .join(',');
 
@@ -118,7 +120,7 @@ const methods = swagger.apis.flatMap(api =>
 const models = Object.values(swagger.models).map(model => {
   const fields = Object.entries(model.properties).map(([k, v]) => {
     //@ts-expect-error(2339)
-    return `${k}: ${mapDataType(v.type, false, [], v.items?.$ref)}`;
+    return `${k}: ${mapDataType('', v.type, false, [], v.items?.$ref)}`;
   });
   return `export type ${model.id} = {${fields.join(',')}}`;
 });

@@ -58,9 +58,9 @@ export class BaseClient {
         | 'digital comic'
         | 'infinite comic';
       formatType?: 'comic' | 'collection';
-      noVariants?: 'true';
+      noVariants?: boolean;
       dateDescriptor?: 'lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth';
-      dateRange?: number[];
+      dateRange?: string[];
       title?: string;
       titleStartsWith?: string;
       startYear?: number;
@@ -71,7 +71,7 @@ export class BaseClient {
       isbn?: string;
       ean?: string;
       issn?: string;
-      hasDigitalIssue?: 'true';
+      hasDigitalIssue?: boolean;
       modifiedSince?: string;
       creators?: number[];
       series?: number[];
@@ -223,9 +223,9 @@ export class BaseClient {
       | 'digital comic'
       | 'infinite comic';
     formatType?: 'comic' | 'collection';
-    noVariants?: 'true';
+    noVariants?: boolean;
     dateDescriptor?: 'lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth';
-    dateRange?: number[];
+    dateRange?: string[];
     title?: string;
     titleStartsWith?: string;
     startYear?: number;
@@ -236,7 +236,7 @@ export class BaseClient {
     isbn?: string;
     ean?: string;
     issn?: string;
-    hasDigitalIssue?: 'true';
+    hasDigitalIssue?: boolean;
     modifiedSince?: string;
     creators?: number[];
     characters?: number[];
@@ -474,9 +474,9 @@ export class BaseClient {
         | 'digital comic'
         | 'infinite comic';
       formatType?: 'comic' | 'collection';
-      noVariants?: 'true';
+      noVariants?: boolean;
       dateDescriptor?: 'lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth';
-      dateRange?: number[];
+      dateRange?: string[];
       title?: string;
       titleStartsWith?: string;
       startYear?: number;
@@ -487,7 +487,7 @@ export class BaseClient {
       isbn?: string;
       ean?: string;
       issn?: string;
-      hasDigitalIssue?: 'true'[];
+      hasDigitalIssue?: boolean[];
       modifiedSince?: string;
       characters?: number[];
       series?: number[];
@@ -709,9 +709,9 @@ export class BaseClient {
         | 'digital comic'
         | 'infinite comic';
       formatType?: 'comic' | 'collection';
-      noVariants?: 'true'[];
+      noVariants?: boolean[];
       dateDescriptor?: ('lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth')[];
-      dateRange?: number[];
+      dateRange?: string[];
       title?: string;
       titleStartsWith?: string;
       startYear?: number;
@@ -722,7 +722,7 @@ export class BaseClient {
       isbn?: string;
       ean?: string;
       issn?: string;
-      hasDigitalIssue?: 'true'[];
+      hasDigitalIssue?: boolean[];
       modifiedSince?: string;
       creators?: number[];
       characters?: number[];
@@ -966,9 +966,9 @@ export class BaseClient {
         | 'digital comic'
         | 'infinite comic';
       formatType?: 'comic' | 'collection';
-      noVariants?: 'true'[];
+      noVariants?: boolean[];
       dateDescriptor?: ('lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth')[];
-      dateRange?: number[];
+      dateRange?: string[];
       title?: string;
       titleStartsWith?: string;
       startYear?: number;
@@ -979,7 +979,7 @@ export class BaseClient {
       isbn?: string;
       ean?: string;
       issn?: string;
-      hasDigitalIssue?: 'true'[];
+      hasDigitalIssue?: boolean[];
       modifiedSince?: string;
       creators?: number[];
       characters?: number[];
@@ -1189,9 +1189,9 @@ export class BaseClient {
         | 'digital comic'
         | 'infinite comic';
       formatType?: 'comic' | 'collection';
-      noVariants?: 'true'[];
+      noVariants?: boolean[];
       dateDescriptor?: ('lastWeek' | 'thisWeek' | 'nextWeek' | 'thisMonth')[];
-      dateRange?: number[];
+      dateRange?: string[];
       title?: string;
       titleStartsWith?: string;
       startYear?: number;
@@ -1202,7 +1202,7 @@ export class BaseClient {
       isbn?: string;
       ean?: string;
       issn?: string;
-      hasDigitalIssue?: 'true'[];
+      hasDigitalIssue?: boolean[];
       modifiedSince?: string;
       creators?: number[];
       characters?: number[];
