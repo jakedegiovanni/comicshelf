@@ -6,9 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:all": "npm run build -w packages -w apps",
-    "fmt": "npm run fmt -ws",
-    "lint": "eslint .",
-    "fmt:fix": "npm run fmt:fix -ws",
+    "lint": "eslint . --fix",
+    "fmt:fix": "prettier apps/ packages/ --write",
     "clean": "npm run clean -ws",
     "knip": "knip"
   },
