@@ -3,10 +3,8 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "paths": {
-      "@jakedegiovanni/marvel-client": [
-        "../../packages/marvel-client/src/index.ts"
-      ]
-    }
-  }
+    "noEmit": false,
+    "outDir": "./dist"
+  },
+  "include": ["src"]
 }

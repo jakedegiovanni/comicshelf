@@ -11,7 +11,7 @@ export default tseslint.config(
   tseslint.configs.stylisticTypeChecked,
   globalIgnores(['**/dist/', '*.config.mjs']),
   {
-    files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.node, // todo - configure globals to split node vs browser

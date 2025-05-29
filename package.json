@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:all": "npm run build -w packages -w apps",
+    "build": "npm run build -w packages -w apps",
     "lint": "eslint . --fix",
-    "fmt:fix": "prettier apps/ packages/ --write",
+    "fmt": "prettier apps/ packages/ --write",
     "clean": "npm run clean -ws",
     "knip": "knip"
   },

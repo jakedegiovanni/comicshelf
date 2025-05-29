@@ -7,7 +7,7 @@
   "type": "module",
   "private": false,
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p ./tsconfig.build.json",
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rm -rf dist",
     "generate": "node --experimental-strip-types ./scripts/generateBaseClient.ts",
