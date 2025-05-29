@@ -1,9 +1,8 @@
 import type { Config } from './config.ts';
 import { createHash } from 'node:crypto';
 
-// todo - figure out how to remove this any
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-type QueryValue = any | any[];
+// todo - figure out how to remove this unknown
+type QueryValue = unknown;
 
 // todo - schema validation here or above?
 export const request = async <Response, Data>(

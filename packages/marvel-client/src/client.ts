@@ -1,11 +1,7 @@
-import type { Config } from './config.ts';
 import { BaseClient, type ComicDataWrapper } from './base.ts';
 
 export class Client extends BaseClient {
-  constructor(config: Config) {
-    super(config);
-  }
-
+  // todo - dayJs for easier manipulation
   public async weeklyComics(date: Date): Promise<ComicDataWrapper> {
     const first = new Date(date);
     if (first.getDay() === 0) first.setDate(first.getDate() - 1);

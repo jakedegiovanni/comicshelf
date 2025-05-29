@@ -1,5 +1,5 @@
 {
-  "name": "@jakedegiovanni/comicshelf",
+  "name": "comicshelf",
   "version": "0.0.1",
   "description": "View weekly comic releases",
   "private": true,
@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:all": "npm run build -w packages -w apps",
     "fmt": "npm run fmt -ws",
-    "lint": "npm run lint -ws",
+    "lint": "eslint .",
     "fmt:fix": "npm run fmt:fix -ws",
     "clean": "npm run clean -ws",
     "knip": "knip"

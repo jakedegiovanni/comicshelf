@@ -119,10 +119,10 @@ const methods = swagger.apis.flatMap(api =>
 
 const models = Object.values(swagger.models).map(model => {
   const fields = Object.entries(model.properties).map(([k, v]) => {
-    //@ts-expect-error(2339)
-    return `${k}: ${mapDataType('', v.type, false, [], v.items?.$ref)}`;
+    //@ts-expect-error(2339) this is todo..
+    return `${k}: ${mapDataType('', v.type, false, [], v.items?.$ref)}`; // eslint-disable-line
   });
-  return `export type ${model.id} = {${fields.join(',')}}`;
+  return `export interface ${model.id} { ${fields.join(';')}} }`;
 });
 
 const template = `import { request } from "./request.ts";

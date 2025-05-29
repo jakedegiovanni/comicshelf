@@ -9,7 +9,6 @@
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint .",
     "fmt": "prettier .",
     "fmt:fix": "prettier . --write",
     "clean": "rm -rf dist",

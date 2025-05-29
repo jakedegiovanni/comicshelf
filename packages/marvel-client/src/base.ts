@@ -1359,93 +1359,118 @@ export class BaseClient {
   }
 }
 
-export type ComicList = {
+export interface ComicList {
   available: number;
   returned: number;
   collectionURI: string;
   items: ComicSummary[];
-};
+}
 
-export type EventList = {
+export interface EventList {
   available: number;
   returned: number;
   collectionURI: string;
   items: EventSummary[];
-};
+}
 
-export type CreatorList = {
+export interface CreatorList {
   available: number;
   returned: number;
   collectionURI: string;
   items: CreatorSummary[];
-};
+}
 
-export type CharacterList = {
+export interface CharacterList {
   available: number;
   returned: number;
   collectionURI: string;
   items: CharacterSummary[];
-};
+}
 
-export type SeriesList = {
+export interface SeriesList {
   available: number;
   returned: number;
   collectionURI: string;
   items: SeriesSummary[];
-};
+}
 
-export type StoryList = {
+export interface StoryList {
   available: number;
   returned: number;
   collectionURI: string;
   items: StorySummary[];
-};
+}
 
-export type CharacterSummary = {
+export interface CharacterSummary {
   resourceURI: string;
   name: string;
   role: string;
-};
+}
 
-export type EventSummary = { resourceURI: string; name: string };
+export interface EventSummary {
+  resourceURI: string;
+  name: string;
+}
 
-export type SeriesSummary = { resourceURI: string; name: string };
+export interface SeriesSummary {
+  resourceURI: string;
+  name: string;
+}
 
-export type ComicSummary = { resourceURI: string; name: string };
+export interface ComicSummary {
+  resourceURI: string;
+  name: string;
+}
 
-export type Url = { type: string; url: string };
+export interface Url {
+  type: string;
+  url: string;
+}
 
-export type CreatorSummary = {
+export interface CreatorSummary {
   resourceURI: string;
   name: string;
   role: string;
-};
+}
 
-export type StorySummary = { resourceURI: string; name: string; type: string };
+export interface StorySummary {
+  resourceURI: string;
+  name: string;
+  type: string;
+}
 
-export type Image = { path: string; extension: string };
+export interface Image {
+  path: string;
+  extension: string;
+}
 
-export type ComicDate = { type: string; date: string };
+export interface ComicDate {
+  type: string;
+  date: string;
+}
 
-export type CharacterDataContainer = {
+export interface CharacterDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Character[];
-};
+}
 
-export type EventDataContainer = {
+export interface EventDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Event[];
-};
+}
 
-export type ComicPrice = { type: string; price: number };
+export interface ComicPrice {
+  type: string;
+  price: number;
+}
 
-export type EventDataWrapper = {
+export interface EventDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1453,9 +1478,9 @@ export type EventDataWrapper = {
   attributionHTML: string;
   data: EventDataContainer;
   etag: string;
-};
+}
 
-export type Creator = {
+export interface Creator {
   id: number;
   firstName: string;
   middleName: string;
@@ -1470,9 +1495,9 @@ export type Creator = {
   stories: StoryList;
   comics: ComicList;
   events: EventList;
-};
+}
 
-export type Event = {
+export interface Event {
   id: number;
   title: string;
   description: string;
@@ -1489,19 +1514,23 @@ export type Event = {
   creators: CreatorList;
   next: EventSummary;
   previous: EventSummary;
-};
+}
 
-export type ComicDataContainer = {
+export interface ComicDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Comic[];
-};
+}
 
-export type TextObject = { type: string; language: string; text: string };
+export interface TextObject {
+  type: string;
+  language: string;
+  text: string;
+}
 
-export type CreatorDataWrapper = {
+export interface CreatorDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1509,9 +1538,9 @@ export type CreatorDataWrapper = {
   attributionHTML: string;
   data: CreatorDataContainer;
   etag: string;
-};
+}
 
-export type StoryDataWrapper = {
+export interface StoryDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1519,9 +1548,9 @@ export type StoryDataWrapper = {
   attributionHTML: string;
   data: StoryDataContainer;
   etag: string;
-};
+}
 
-export type Character = {
+export interface Character {
   id: number;
   name: string;
   description: string;
@@ -1533,9 +1562,9 @@ export type Character = {
   stories: StoryList;
   events: EventList;
   series: SeriesList;
-};
+}
 
-export type CharacterDataWrapper = {
+export interface CharacterDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1543,9 +1572,9 @@ export type CharacterDataWrapper = {
   attributionHTML: string;
   data: CharacterDataContainer;
   etag: string;
-};
+}
 
-export type ComicDataWrapper = {
+export interface ComicDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1553,9 +1582,9 @@ export type ComicDataWrapper = {
   attributionHTML: string;
   data: ComicDataContainer;
   etag: string;
-};
+}
 
-export type Series = {
+export interface Series {
   id: number;
   title: string;
   description: string;
@@ -1573,9 +1602,9 @@ export type Series = {
   creators: CreatorList;
   next: SeriesSummary;
   previous: SeriesSummary;
-};
+}
 
-export type SeriesDataWrapper = {
+export interface SeriesDataWrapper {
   code: number;
   status: string;
   copyright: string;
@@ -1583,25 +1612,25 @@ export type SeriesDataWrapper = {
   attributionHTML: string;
   data: SeriesDataContainer;
   etag: string;
-};
+}
 
-export type SeriesDataContainer = {
+export interface SeriesDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Series[];
-};
+}
 
-export type StoryDataContainer = {
+export interface StoryDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Story[];
-};
+}
 
-export type Comic = {
+export interface Comic {
   id: number;
   digitalId: number;
   title: string;
@@ -1631,17 +1660,17 @@ export type Comic = {
   characters: CharacterList;
   stories: StoryList;
   events: EventList;
-};
+}
 
-export type CreatorDataContainer = {
+export interface CreatorDataContainer {
   offset: number;
   limit: number;
   total: number;
   count: number;
   results: Creator[];
-};
+}
 
-export type Story = {
+export interface Story {
   id: number;
   title: string;
   description: string;
@@ -1655,4 +1684,4 @@ export type Story = {
   characters: CharacterList;
   creators: CreatorList;
   originalissue: ComicSummary;
-};
+}

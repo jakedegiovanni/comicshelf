@@ -1,8 +1,8 @@
-export type Config = {
+export interface Config {
   API_PUBLIC_KEY: string;
   API_PRIVATE_KEY: string;
   API_HOST: string;
-};
+}
 
 export const configFromEnv = (): Config => {
   const { MARVEL_API_HOST, MARVEL_API_PRIVATE_KEY, MARVEL_API_PUBLIC_KEY } =

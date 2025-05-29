@@ -1,27 +1,34 @@
 import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
-import pluginJs from '@eslint/js';
+import eslint from '@eslint/js';
+import { globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-/** @type {import('eslint').Linter.Config[]} */
-export default [
+export default tseslint.config(
+  eslint.configs.recommended,
+  tseslint.configs.strict,
+  tseslint.configs.recommendedTypeCheckedOnly,
+  tseslint.configs.stylisticTypeChecked,
+  globalIgnores(['**/dist/', '*.config.mjs']),
   {
     files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
-    ignores: ['node_modules/**/*', 'dist/**/*'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...globals.node, // todo - configure globals to split node vs browser
       },
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     rules: {
       complexity: 'error',
+      '@typescript-eslint/return-await': ['error', 'always'],
     },
   },
   eslintConfigPrettier,
-];
+);
