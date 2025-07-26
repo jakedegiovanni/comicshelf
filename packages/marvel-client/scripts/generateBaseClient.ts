@@ -11,12 +11,15 @@ const mapDataType = (
   values: string[] | undefined,
   itemsRef: string | undefined,
 ): string => {
-  if (name === 'dateRange') dt = 'string';
+  if (name === 'dateRange') {
+    dt = 'string';
+  }
   let dataType = dt;
 
   if (dataType === 'Array') {
-    if (!itemsRef)
+    if (!itemsRef) {
       throw new Error(`itemsRef must be defined when type is of Array`);
+    }
 
     return `${itemsRef}[]`;
   }
@@ -24,13 +27,21 @@ const mapDataType = (
   if (Array.isArray(values) && values.length > 0) {
     dataType =
       dt === 'boolean' ? 'boolean' : values.map(v => `"${v}"`).join(' | ');
-    if (allowMultiple) dataType = `(${dataType})`;
+    if (allowMultiple) {
+      dataType = `(${dataType})`;
+    }
   }
 
-  if (dt === 'int' || dt === 'float' || dt === 'double') dataType = 'number';
-  if (dt === 'Date') dataType = 'string';
+  if (dt === 'int' || dt === 'float' || dt === 'double') {
+    dataType = 'number';
+  }
+  if (dt === 'Date') {
+    dataType = 'string';
+  }
 
-  if (allowMultiple) dataType = `${dataType}[]`;
+  if (allowMultiple) {
+    dataType = `${dataType}[]`;
+  }
 
   return dataType;
 };
@@ -72,7 +83,9 @@ const createQueryMap = (operation: {
     )
     .join(',');
 
-  if (!params) return '';
+  if (!params) {
+    return '';
+  }
 
   return `query: {${params}}`;
 };
@@ -96,7 +109,9 @@ const createPathParamMap = (operation: {
     })
     .join(',');
 
-  if (!params) return { ty: '', names };
+  if (!params) {
+    return { ty: '', names };
+  }
 
   return { ty: `path: {${params}}`, names };
 };

@@ -1,4 +1,4 @@
-import eslintConfigPrettier from 'eslint-config-prettier';
+import eslintConfigPrettier, { rules } from 'eslint-config-prettier';
 import globals from 'globals';
 import eslint from '@eslint/js';
 import { globalIgnores } from 'eslint/config';
@@ -27,8 +27,30 @@ export default tseslint.config(
   {
     rules: {
       complexity: 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      'require-await': 'off',
+      '@typescript-eslint/require-await': 'error',
       '@typescript-eslint/return-await': ['error', 'always'],
+      '@typescript-eslint/no-import-type-side-effects': 'error',
     },
   },
   eslintConfigPrettier,
+  {
+    rules: {
+      curly: ['error', 'all'],
+    },
+  },
 );
